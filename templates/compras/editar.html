@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}{% if orden %}Editar {{ orden.numero }}{% else %}Nueva orden{% endif %}{% endblock %}
+{% block miga %}{% if request.user|puede:"compras:lista" %}<a href="{% url 'compras:lista' %}">Compras</a>{% endif %} › {% if orden %}{{ orden.numero }}{% else %}Nueva{% endif %}{% endblock %}
+{% block encabezado %}{% if orden %}Editar {{ orden.numero }}{% else %}Nueva orden de compra{% endif %}{% endblock %}
+{% block contenido %}
+<form method="post" class="formulario">{% csrf_token %}
+<div class="rejilla lados">
+  <div class="tarjeta"><div class="cab"><h2>Líneas</h2></div>
+    {% if formset.non_form_errors %}<div class="errores-generales" style="margin:12px 16px 0">{{ formset.non_form_errors|join:" " }}</div>{% endif %}
+    {{ formset.management_form }}
+    <table class="datos lineas"><thead><tr><th style="width:50%">Producto</th><th class="num">Cantidad</th><th class="num">Precio unit.</th><th class="quitar"></th></tr></thead>
+    {% for f in formset %}<tr>{{ f.id }}<td>{{ f.producto }}{% for e in f.producto.errors %}<span class="error">{{ e }}</span>{% endfor %}</td><td class="num">{{ f.cantidad }}</td><td class="num">{{ f.precio_unitario }}</td><td class="quitar">{% if f.instance.pk %}<label>{{ f.DELETE }} ×</label>{% endif %}</td></tr>{% endfor %}</table>
+    <p class="tenue" style="padding:10px 16px">Guarda para agregar más líneas.</p>
+  </div>
+  <div style="display:grid;gap:16px">
+    <div class="tarjeta"><div class="cab"><h2>Datos</h2></div><div class="cuerpo">{% include "parciales/formulario.html" %}</div></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">{% if request.user|puede:"compras:lista" %}<a class="boton" href="{% url 'compras:lista' %}">Cancelar</a>{% endif %}<button class="boton primario">Guardar</button></div>
+  </div>
+</div>
+</form>
+{% endblock %}

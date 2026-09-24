@@ -1,0 +1,88 @@
+{% load static erp %}<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block titulo %}ERP{% endblock %} · {{ request.empresa.nombre_comercial|default:request.empresa.razon_social }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/erp.css' %}?v=20260924-dashboard">
+</head>
+<body>
+<a class="saltar" href="#contenido">Saltar al contenido</a>
+<div class="app">
+  <aside class="lateral" id="navegacion">
+    <div class="marca">
+      <div class="firma"><span class="isotipo" aria-hidden="true">e<span>·</span></span><span>ERP<span class="firma-sub">BUSINESS WORKSPACE</span></span></div>
+      <div class="empresa-etiqueta">ESPACIO DE TRABAJO</div>
+      <b>{{ request.empresa.nombre_comercial|default:request.empresa.razon_social }}</b>
+      <small>RUC {{ request.empresa.ruc }}</small>
+    </div>
+    <nav aria-label="Navegación principal">
+      {% with ruta=request.resolver_match.url_name ns=request.resolver_match.namespace %}
+      <a href="{% url 'core:inicio' %}" class="{% if ns == 'core' %}activo{% endif %}">{% include 'parciales/ico.html' with n='inicio' %}Dashboard</a>
+
+      <div class="grupo">Comercial</div>
+      {% if request.user|puede:"crm:embudo" %}<a href="{% url 'crm:embudo' %}" class="{% if ns == 'crm' %}activo{% endif %}">{% include 'parciales/ico.html' with n='embudo' %}CRM{% if pendientes.leads %}<span class="cuenta">{{ pendientes.leads }}</span>{% endif %}</a>{% endif %}
+      {% if request.user|puede:"ventas:lista" %}<a href="{% url 'ventas:lista' %}" class="{% if ns == 'ventas' %}activo{% endif %}">{% include 'parciales/ico.html' with n='ventas' %}Ventas{% if pendientes.en_espera %}<span class="cuenta">{{ pendientes.en_espera }}</span>{% endif %}</a>{% endif %}
+      {% if request.user|puede:"terceros:lista" %}<a href="{% url 'terceros:lista' %}" class="{% if ns == 'terceros' %}activo{% endif %}">{% include 'parciales/ico.html' with n='terceros' %}Clientes y proveedores</a>{% endif %}
+
+      <div class="grupo">Operación</div>
+      {% if request.user|puede:"catalogo:lista" %}<a href="{% url 'catalogo:lista' %}" class="{% if ns == 'catalogo' %}activo{% endif %}">{% include 'parciales/ico.html' with n='catalogo' %}Productos</a>{% endif %}
+      {% if request.user|puede:"inventario:stock" %}<a href="{% url 'inventario:stock' %}" class="{% if ns == 'inventario' %}activo{% endif %}">{% include 'parciales/ico.html' with n='inventario' %}Inventario{% if pendientes.bajo_minimo %}<span class="cuenta">{{ pendientes.bajo_minimo }}</span>{% endif %}</a>{% endif %}
+      {% if request.user|puede:"compras:lista" %}<a href="{% url 'compras:lista' %}" class="{% if ns == 'compras' %}activo{% endif %}">{% include 'parciales/ico.html' with n='compras' %}Compras</a>{% endif %}
+
+      <div class="grupo">Finanzas</div>
+      {% if request.user|puede:"facturacion:lista" %}<a href="{% url 'facturacion:lista' %}" class="{% if ns == 'facturacion' %}activo{% endif %}">{% include 'parciales/ico.html' with n='facturacion' %}Comprobantes{% if pendientes.rechazados %}<span class="cuenta">{{ pendientes.rechazados }}</span>{% endif %}</a>{% endif %}
+      {% if request.user|puede:"tesoreria:cobranza" %}<a href="{% url 'tesoreria:cobranza' %}" class="{% if ns == 'tesoreria' %}activo{% endif %}">{% include 'parciales/ico.html' with n='tesoreria' %}Cobranza</a>{% endif %}
+      {% if request.user|puede:"contabilidad:asientos" %}<a href="{% url 'contabilidad:asientos' %}" class="{% if ns == 'contabilidad' %}activo{% endif %}">{% include 'parciales/ico.html' with n='contabilidad' %}Contabilidad</a>{% endif %}
+
+      <div class="grupo">Gestión</div>
+      {% if request.user|puede:'gestion:importar' %}<a href="{% url 'gestion:importar' %}">{% include 'parciales/ico.html' with n='catalogo' %}Importar productos</a>{% endif %}
+      {% if request.user|puede:"gestion:proveedores" %}<a href="{% url 'gestion:proveedores' %}">{% include 'parciales/ico.html' with n='compras' %}Cuentas por pagar</a>{% endif %}
+      {% if request.user|puede:"gestion:inventario" %}<a href="{% url 'gestion:inventario' %}">{% include 'parciales/ico.html' with n='inventario' %}Operaciones de stock</a>{% endif %}
+      {% if request.user|puede:"gestion:agenda" %}<a href="{% url 'gestion:agenda' %}">{% include 'parciales/ico.html' with n='embudo' %}Agenda comercial</a>{% endif %}
+      {% if request.user|puede:"gestion:reportes" %}<a href="{% url 'gestion:reportes' %}">{% include 'parciales/ico.html' with n='contabilidad' %}Reportes</a>{% endif %}
+      {% if request.user|puede:"gestion:cierre" %}<a href="{% url 'gestion:cierre' %}">{% include 'parciales/ico.html' with n='contabilidad' %}Cierre contable</a>{% endif %}
+      <div class="grupo">Sistema</div>
+      {% if request.user|puede:'gestion:preparacion' %}<a href="{% url 'gestion:preparacion' %}">{% include 'parciales/ico.html' with n='admin' %}Preparación de empresa</a>{% endif %}
+      {% if request.user|puede:"integraciones:panel" %}<a href="{% url 'integraciones:panel' %}" class="{% if ns == 'integraciones' %}activo{% endif %}">{% include 'parciales/ico.html' with n='integraciones' %}Integraciones{% if pendientes.fallidos %}<span class="cuenta">{{ pendientes.fallidos }}</span>{% endif %}</a>{% endif %}
+      {% if request.user.is_staff %}<a href="{% url 'admin:index' %}">{% include 'parciales/ico.html' with n='admin' %}Administración</a>{% endif %}
+      {% endwith %}
+    </nav>
+    <div class="pie">
+      <span class="avatar" aria-hidden="true">{{ request.user.username|first|upper }}</span>
+      <b>{{ request.user.get_full_name|default:request.user.username }}</b>
+      {% if request.user.empresas.count > 1 or request.user.is_superuser %}<a href="{% url 'core:cambiar_empresa' %}">Cambiar empresa</a> · {% endif %}
+      <form method="post" action="{% url 'cuenta:logout' %}" class="inline">{% csrf_token %}<button class="boton chico" style="background:transparent;border-color:transparent;color:#8fa3bb;padding:0">Salir</button></form>
+    </div>
+  </aside>
+
+  <div class="principal">
+    <div class="barra-contexto">
+      <button class="boton menu-toggle" type="button" aria-expanded="false" aria-controls="navegacion">☰ <span>Menú</span></button>
+      <span class="contexto-nombre">Tu empresa, conectada.</span>
+      <div class="barra-derecha"><span class="fecha-hoy">{% now "d M Y" %}</span><span class="workspace-tag">Espacio de trabajo</span></div>
+    </div>
+    <header class="cabecera">
+      <div>
+        <div class="miga">{% block miga %}{% endblock %}</div>
+        <h1>{% block encabezado %}{% endblock %}</h1>
+      </div>
+      <div class="acciones">{% block acciones %}{% endblock %}</div>
+    </header>
+    <main class="contenido" id="contenido" tabindex="-1">
+      {% if messages %}
+      <div class="mensajes">
+        {% for m in messages %}<div class="mensaje {{ m.tags }}">{{ m }}</div>{% endfor %}
+      </div>
+      {% endif %}
+      {% block contenido %}{% endblock %}
+    </main>
+    <footer class="pie-plataforma"><span>ERP <b>Workspace</b></span><span>Una visión completa. Mejores decisiones.</span></footer>
+  </div>
+</div>
+<script src="{% static 'js/interfaz.js' %}" defer></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

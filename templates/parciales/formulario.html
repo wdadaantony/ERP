@@ -1,0 +1,10 @@
+{% if form.non_field_errors %}<div class="errores-generales">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+{% for campo in form.visible_fields %}
+<div class="campo">
+  <label for="{{ campo.id_for_label }}">{{ campo.label }}{% if campo.field.required %} *{% endif %}</label>
+  {{ campo }}
+  {% if campo.help_text %}<span class="ayuda">{{ campo.help_text }}</span>{% endif %}
+  {% for e in campo.errors %}<span class="error">{{ e }}</span>{% endfor %}
+</div>
+{% endfor %}
+{% for campo in form.hidden_fields %}{{ campo }}{% endfor %}

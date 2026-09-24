@@ -1,0 +1,7 @@
+Recibimos una solicitud para restablecer tu contraseña del ERP.
+
+Usuario: {{ user.get_username }}
+
+{{ protocol }}://{{ domain }}{% url 'cuenta:restablecer' uidb64=uid token=token %}
+
+Si no solicitaste este cambio, ignora el mensaje. Tu contraseña no cambiará.

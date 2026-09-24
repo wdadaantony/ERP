@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Leads{% endblock %}
+{% block miga %}{% if request.user|puede:"crm:embudo" %}<a href="{% url 'crm:embudo' %}">CRM</a>{% endif %} › Lista{% endblock %}
+{% block encabezado %}Leads{% endblock %}
+{% block acciones %}
+<div class="segmentado">
+  {% if request.user|puede:"crm:lista" %}<a class="boton primario" href="{% url 'crm:lista' %}?{{ querystring_actual }}">Lista</a>{% endif %}
+  {% if request.user|puede:"crm:embudo" %}<a class="boton" href="{% url 'crm:embudo' %}?{{ querystring_actual }}">Kanban</a>{% endif %}
+</div>
+{% if request.user|puede:"crm:nuevo" %}<a class="boton primario" href="{% url 'crm:nuevo' %}">Nuevo lead</a>{% endif %}
+{% endblock %}
+{% block contenido %}
+{% include "crm/_filtros.html" %}
+<div class="tarjeta">
+  <div class="cab"><div class="pastillas"><a class="pastilla {% if not estado %}activa{% endif %}" href="?{{ querystring_sin_estado }}">Todos</a>{% for v, n in estados %}<a class="pastilla {% if estado == v %}activa{% endif %}" href="?{{ querystring_sin_estado }}{% if querystring_sin_estado %}&{% endif %}estado={{ v }}">{{ n }}</a>{% endfor %}</div></div>
+  {% if page_obj.object_list %}
+  <table class="datos"><thead><tr><th>Lead</th><th>Contacto</th><th>Origen</th><th>Vendedor</th><th>Estado</th><th class="num">Valor est.</th><th>Creado</th></tr></thead>
+  {% for l in page_obj %}<tr><td>{% if request.user|puede:"crm:detalle" %}<a class="fila" href="{% url 'crm:detalle' l.pk %}">{{ l.nombre }}</a>{% endif %}{% if l.empresa_lead %}<br><small>{{ l.empresa_lead }}</small>{% endif %}</td><td><small>{{ l.email }}<br>{{ l.telefono }}</small></td><td><small>{{ l.origen|default:"—" }}{% if l.campania %}<br>{{ l.campania }}{% endif %}</small></td><td>{{ l.vendedor|default:"—" }}</td><td><span class="estado {{ l.estado }}">{{ l.get_estado_display }}</span></td><td class="num">{% if l.valor_estimado %}{{ l.valor_estimado|floatformat:2 }}{% else %}—{% endif %}</td><td><small>{{ l.creado_en|date:"d M Y" }}</small></td></tr>{% endfor %}</table>
+  {% include "parciales/paginacion.html" %}
+  {% else %}<div class="vacio"><b>Sin leads</b>Los leads entran por formularios, campañas o a mano.</div>{% endif %}
+</div>
+{% endblock %}

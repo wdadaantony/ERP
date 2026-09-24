@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Integraciones{% endblock %}
+{% block encabezado %}Integraciones{% endblock %}
+{% block acciones %}{% if request.user|puede:"integraciones:registros" %}<a class="boton" href="{% url 'integraciones:registros' %}">Bitácora completa</a>{% endif %}{% if request.user|puede:"integraciones:procesar_ahora" %}<form class="inline" method="post" action="{% url 'integraciones:procesar_ahora' %}">{% csrf_token %}<button class="boton primario">Procesar cola ahora</button></form>{% endif %}{% endblock %}
+{% block contenido %}
+<div class="rejilla c3" style="margin-bottom:16px">
+  {% for s in servicios %}
+  <div class="tarjeta"><div class="cuerpo">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start"><div><b>{{ s.nombre }}</b><br><small>{{ s.get_codigo_display }}{% if s.proveedor %} · {{ s.proveedor }}{% endif %}</small></div>{% if s.modo_simulado %}<span class="estado en_espera">simulado</span>{% elif s.activo %}<span class="estado pendiente">configurado</span>{% else %}<span class="estado cancelado">apagado</span>{% endif %}</div>
+    <dl class="ficha" style="margin-top:10px"><dt>Conexión</dt><dd>{{ s.diagnostico }}</dd><dt>Último envío</dt><dd>{% if s.ultimo %}{{ s.ultimo.creado_en|timesince }} · <span class="estado {{ s.ultimo.estado }}">{{ s.ultimo.get_estado_display }}</span>{% else %}—{% endif %}</dd><dt>Errores</dt><dd>{{ s.errores }}</dd><dt>Webhook</dt><dd class="mono" style="font-size:11px">/integraciones/webhook/{{ s.pk }}/</dd></dl>
+  </div></div>
+  {% endfor %}
+</div>
+
+<div class="rejilla c2">
+  <div class="tarjeta">
+    <div class="cab"><h2>Cola de errores</h2><small>{{ fallidos|length }}</small></div>
+    {% if fallidos %}<table class="datos">{% for t in fallidos %}<tr><td><b>{{ t.operacion }}</b><br><small>{{ t.servicio.nombre }} · {{ t.entidad }} #{{ t.objeto_id }}</small></td><td><small>{{ t.ultimo_error|truncatechars:90 }}</small></td><td>{% if request.user|puede:"integraciones:reencolar" %}<form method="post" action="{% url 'integraciones:reencolar' t.pk %}">{% csrf_token %}<button class="boton chico">Reintentar</button></form>{% endif %}</td></tr>{% endfor %}</table>
+    {% else %}<div class="vacio">Sin trabajos fallidos.</div>{% endif %}
+  </div>
+  <div class="tarjeta">
+    <div class="cab"><h2>Pendientes</h2><small>{{ pendientes|length }}</small></div>
+    {% if pendientes %}<table class="datos">{% for t in pendientes %}<tr><td><b>{{ t.operacion }}</b><br><small>{{ t.servicio.nombre }} · #{{ t.objeto_id }}</small></td><td><span class="estado {{ t.estado }}">{{ t.get_estado_display }}</span></td><td><small>intento {{ t.intentos }}{% if t.estado == E.REINTENTAR %} · {{ t.ejecutar_despues_de|timeuntil }}{% endif %}</small></td></tr>{% endfor %}</table>
+    {% else %}<div class="vacio">La cola está vacía.</div>{% endif %}
+  </div>
+  {% if webhooks_pendientes %}
+  <div class="tarjeta"><div class="cab"><h2>Webhooks sin aplicar</h2></div><table class="datos">{% for w in webhooks_pendientes %}<tr><td><b>{{ w.evento }}</b><br><small>{{ w.servicio.nombre }} · {{ w.creado_en|timesince }}</small></td><td>{% if not w.firma_valida %}<span class="estado rechazado">firma inválida</span>{% endif %}</td><td><small>{{ w.mensaje_error|truncatechars:80 }}</small></td></tr>{% endfor %}</table></div>
+  {% endif %}
+  <div class="tarjeta" {% if not webhooks_pendientes %}style="grid-column:1/-1"{% endif %}>
+    <div class="cab"><h2>Últimos envíos</h2></div>
+    <table class="datos"><thead><tr><th>Cuándo</th><th>Servicio</th><th>Operación</th><th>Objeto</th><th>Estado</th><th class="num">HTTP</th><th class="num">ms</th></tr></thead>
+    {% for r in registros %}<tr><td><small>{{ r.creado_en|date:"d M H:i:s" }}</small></td><td>{{ r.servicio.nombre }}</td><td>{{ r.operacion }}</td><td><small>{{ r.entidad }} #{{ r.objeto_id }}</small></td><td><span class="estado {{ r.estado }}">{{ r.get_estado_display }}</span></td><td class="num">{{ r.codigo_http|default:"—" }}</td><td class="num">{{ r.duracion_ms|default:"—" }}</td></tr>{% empty %}<tr><td colspan="7" class="vacio">Sin envíos todavía.</td></tr>{% endfor %}</table>
+  </div>
+</div>
+{% endblock %}

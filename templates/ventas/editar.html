@@ -1,0 +1,132 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}{% if pedido %}Editar {{ pedido.numero }}{% else %}Nueva cotización{% endif %}{% endblock %}
+{% block miga %}{% if request.user|puede:"ventas:lista" %}<a href="{% url 'ventas:lista' %}">Ventas</a>{% endif %} › {% if pedido %}{% if request.user|puede:"ventas:detalle" %}<a href="{% url 'ventas:detalle' pedido.pk %}">{{ pedido.numero }}</a>{% endif %} › Editar{% else %}Nueva{% endif %}{% endblock %}
+{% block encabezado %}{% if pedido %}Editar {{ pedido.numero }}{% else %}Nueva cotización{% endif %}{% endblock %}
+{% block contenido %}
+<form method="post" class="formulario" id="form-pedido">{% csrf_token %}
+<div class="rejilla lados">
+  <div style="display:grid;gap:16px">
+    <div class="tarjeta">
+      <div class="cab"><h2>Líneas</h2><button type="button" class="boton chico" id="agregar-linea">+ Agregar línea</button></div>
+      {% if formset.non_form_errors %}<div class="errores-generales" style="margin:12px 16px 0">{{ formset.non_form_errors|join:" " }}</div>{% endif %}
+      {{ formset.management_form }}
+      <div class="envuelve"><table class="datos lineas" id="tabla-lineas">
+        <thead><tr><th style="width:38%">Producto</th><th>Descripción</th><th class="num" style="width:90px">Cant.</th><th class="num" style="width:110px">P. unit.</th><th class="num" style="width:80px">Dto. %</th><th class="num" style="width:110px">Subtotal</th><th class="quitar"></th></tr></thead>
+        <tbody>
+        {% for f in formset %}
+        <tr class="linea {% if f.instance.pk and f.DELETE.value %}oculto{% endif %}">
+          <td>{{ f.id }}{{ f.producto }}{% for e in f.producto.errors %}<span class="error">{{ e }}</span>{% endfor %}</td>
+          <td>{{ f.descripcion }}</td>
+          <td class="num">{{ f.cantidad }}{% for e in f.cantidad.errors %}<span class="error">{{ e }}</span>{% endfor %}</td>
+          <td class="num">{{ f.precio_unitario }}</td>
+          <td class="num">{{ f.descuento_pct }}</td>
+          <td class="num"><span class="subtotal">0.00</span></td>
+          <td class="quitar">{% if f.instance.pk %}<label title="Quitar">{{ f.DELETE }}<span style="display:none">Quitar</span>×</label>{% else %}<button type="button" class="boton chico peligro quitar-linea" title="Quitar">×</button>{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr><td colspan="5" class="num">Subtotal</td><td class="num" id="t-subtotal">0.00</td><td></td></tr>
+          <tr><td colspan="5" class="num">IGV 18%</td><td class="num" id="t-igv">0.00</td><td></td></tr>
+          <tr><td colspan="5" class="num"><b>Total</b></td><td class="num" id="t-total"><b>0.00</b></td><td></td></tr>
+        </tfoot>
+      </table></div>
+      <template id="plantilla-linea">
+        <tr class="linea">
+          <td>{{ formset.empty_form.producto }}</td>
+          <td>{{ formset.empty_form.descripcion }}</td>
+          <td class="num">{{ formset.empty_form.cantidad }}</td>
+          <td class="num">{{ formset.empty_form.precio_unitario }}</td>
+          <td class="num">{{ formset.empty_form.descuento_pct }}</td>
+          <td class="num"><span class="subtotal">0.00</span></td>
+          <td class="quitar"><button type="button" class="boton chico peligro quitar-linea" title="Quitar">×</button></td>
+        </tr>
+      </template>
+    </div>
+  </div>
+
+  <div style="display:grid;gap:16px">
+    <div class="tarjeta">
+      <div class="cab"><h2>Datos del pedido</h2></div>
+      <div class="cuerpo">{% include "parciales/formulario.html" %}</div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <a class="boton" href="{% if pedido %}{% url 'ventas:detalle' pedido.pk %}{% else %}{% url 'ventas:lista' %}{% endif %}">Cancelar</a>
+      <button class="boton primario">{% if pedido %}Guardar cambios{% else %}Guardar cotización{% endif %}</button>
+    </div>
+  </div>
+</div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+const PRECIOS = {{ precios_json|safe }};
+(function () {
+  const tabla = document.getElementById("tabla-lineas");
+  const cuerpo = tabla.querySelector("tbody");
+  const total = document.getElementById("id_lineas-TOTAL_FORMS");
+  const plantilla = document.getElementById("plantilla-linea");
+
+  function n(v) { const x = parseFloat(v); return isNaN(x) ? 0 : x; }
+  function fmt(v) { return v.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+  function recalcular() {
+    let sub = 0, igv = 0;
+    cuerpo.querySelectorAll("tr.linea").forEach(tr => {
+      const borrar = tr.querySelector("input[name$='-DELETE']");
+      if (borrar && borrar.checked) { tr.classList.add("oculto"); return; }
+      const prod = tr.querySelector("select[name$='-producto']").value;
+      const cant = n(tr.querySelector("input[name$='-cantidad']").value);
+      const precio = n(tr.querySelector("input[name$='-precio_unitario']").value);
+      const dto = n(tr.querySelector("input[name$='-descuento_pct']").value);
+      const s = cant * precio * (1 - dto / 100);
+      tr.querySelector(".subtotal").textContent = fmt(s);
+      sub += s;
+      if (!prod || (PRECIOS[prod] && PRECIOS[prod].igv)) igv += s * 0.18;
+    });
+    document.getElementById("t-subtotal").textContent = fmt(sub);
+    document.getElementById("t-igv").textContent = fmt(igv);
+    document.getElementById("t-total").innerHTML = "<b>" + fmt(sub + igv) + "</b>";
+  }
+
+  function enlazar(tr) {
+    const sel = tr.querySelector("select[name$='-producto']");
+    const precio = tr.querySelector("input[name$='-precio_unitario']");
+    const cant = tr.querySelector("input[name$='-cantidad']");
+    sel.addEventListener("change", () => {
+      const p = PRECIOS[sel.value];
+      if (p && (!precio.value || precio.dataset.auto === "1")) { precio.value = p.precio; precio.dataset.auto = "1"; }
+      if (!cant.value) cant.value = 1;
+      recalcular();
+    });
+    precio.addEventListener("input", () => { precio.dataset.auto = "0"; recalcular(); });
+    tr.querySelectorAll("input").forEach(i => i.addEventListener("input", recalcular));
+    const quitar = tr.querySelector(".quitar-linea");
+    if (quitar) quitar.addEventListener("click", () => { tr.remove(); renumerar(); recalcular(); });
+    const del = tr.querySelector("input[name$='-DELETE']");
+    if (del) del.addEventListener("change", recalcular);
+  }
+
+  function renumerar() {
+    const filas = cuerpo.querySelectorAll("tr.linea");
+    filas.forEach((tr, i) => {
+      tr.querySelectorAll("input, select").forEach(el => {
+        ["name", "id"].forEach(a => { if (el[a]) el[a] = el[a].replace(/lineas-(\d+|__prefix__)-/, "lineas-" + i + "-"); });
+      });
+    });
+    total.value = filas.length;
+  }
+
+  document.getElementById("agregar-linea").addEventListener("click", () => {
+    const tr = plantilla.content.firstElementChild.cloneNode(true);
+    cuerpo.appendChild(tr);
+    renumerar();
+    enlazar(tr);
+    tr.querySelector("select").focus();
+  });
+
+  cuerpo.querySelectorAll("tr.linea").forEach(enlazar);
+  recalcular();
+})();
+</script>
+{% endblock %}

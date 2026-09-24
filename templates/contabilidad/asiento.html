@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}{{ a.numero }}{% endblock %}
+{% block miga %}{% if request.user|puede:"contabilidad:asientos" %}<a href="{% url 'contabilidad:asientos' %}">Contabilidad</a>{% endif %} › {{ a.numero }}{% endblock %}
+{% block encabezado %}{{ a.numero }} {% if a.cuadra %}<span class="estado cerrado" style="vertical-align:middle">cuadra</span>{% else %}<span class="estado rechazado" style="vertical-align:middle">no cuadra</span>{% endif %}{% endblock %}
+{% block contenido %}
+<div class="tarjeta" style="max-width:900px">
+  <div class="cab"><h2>{{ a.glosa }}</h2><span class="tenue">{{ a.fecha|date:"d M Y" }} · periodo {{ a.periodo }}</span></div>
+  <table class="datos"><thead><tr><th>Cuenta</th><th>Tercero</th><th>Glosa</th><th class="num">Debe</th><th class="num">Haber</th></tr></thead>
+  {% for l in lineas %}<tr><td><span class="mono">{{ l.cuenta.codigo }}</span> {{ l.cuenta.nombre }}</td><td>{{ l.tercero|default:"" }}</td><td><small>{{ l.glosa }}</small></td><td class="num">{% if l.debe %}{{ l.debe|floatformat:2 }}{% endif %}</td><td class="num">{% if l.haber %}{{ l.haber|floatformat:2 }}{% endif %}</td></tr>{% endfor %}
+  <tfoot><tr><td colspan="3">Totales</td><td class="num">{{ a.total_debe|floatformat:2 }}</td><td class="num">{{ a.total_haber|floatformat:2 }}</td></tr></tfoot></table>
+  {% if a.comprobante %}<div class="cuerpo tenue">Generado por el comprobante {% if request.user|puede:"facturacion:detalle" %}<a href="{% url 'facturacion:detalle' a.comprobante.pk %}">{{ a.comprobante.numero_completo }}</a>{% endif %}.</div>{% endif %}
+</div>
+{% endblock %}

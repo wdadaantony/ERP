@@ -1,0 +1,46 @@
+{% load erp %}
+<div class="dashboard-paneles">
+  {% if serie_facturacion %}
+  <section class="tarjeta dashboard-tendencia">
+    <div class="cab"><div><span class="eyebrow">EVOLUCIÓN COMERCIAL</span><h2>Facturación de los últimos 6 meses</h2></div><span class="estado aceptado">{{ request.empresa.moneda_base }}</span></div>
+    <p class="dashboard-nota">Comprobantes aceptados u observados, con impuestos, antes de notas de crédito. El mes actual está en curso.</p>
+    <div class="dashboard-grafica" role="list" aria-label="Facturación por mes">
+      {% for punto in serie_facturacion %}
+      <div class="dashboard-columna" role="listitem">
+        <strong>{{ punto.total|dinero:request.empresa.moneda_base }}</strong>
+        <div class="dashboard-pista"><div class="dashboard-barra {% if forloop.last %}actual{% endif %}" style="height:{{ punto.altura }}%" title="{{ punto.mes|date:'F Y' }}: {{ punto.total|dinero:request.empresa.moneda_base }}"></div></div>
+        <span>{{ punto.mes|date:"M" }}<small>{{ punto.mes|date:"Y" }}</small></span>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+  {% if request.user|puede:'ventas:lista' %}
+  <section class="tarjeta dashboard-estados">
+    <div class="cab"><div><span class="eyebrow">CICLO COMERCIAL</span><h2>Estado de los pedidos</h2></div></div>
+    <p class="dashboard-nota">Distribución del historial visible para tu usuario.</p>
+    <div class="dashboard-lista-estados">
+      {% for estado in distribucion_pedidos %}<div><div class="dashboard-fila"><span>{{ estado.nombre }}</span><strong>{{ estado.cantidad }}</strong></div><div class="dashboard-progreso"><span style="width:{{ estado.ancho }}%"></span></div></div>
+      {% empty %}<div class="vacio">Los pedidos aparecerán aquí cuando comiences a operar.</div>{% endfor %}
+    </div>
+    <a class="dashboard-enlace" href="{% url 'ventas:lista' %}">Explorar pedidos <span aria-hidden="true">↗</span></a>
+  </section>
+  {% endif %}
+</div>
+<div class="dashboard-paneles dashboard-operacion">
+  {% if request.user|puede:'gestion:proveedores' %}
+  <section class="tarjeta">
+    <div class="cab"><div><span class="eyebrow">COMPROMISOS FINANCIEROS</span><h2>Cuentas por pagar</h2></div><a href="{% url 'gestion:proveedores' %}">Ver todas ↗</a></div>
+    <div class="dashboard-saldo"><strong>{{ saldo_proveedores|dinero:request.empresa.moneda_base }}</strong><span>{{ cantidad_proveedores }} facturas con saldo · {{ proveedores_vencidos }} vencidas</span></div>
+    {% if pagos_proximos %}<div class="dashboard-tabla"><table class="datos"><thead><tr><th>Proveedor / factura</th><th>Vencimiento</th><th class="num">Pendiente</th></tr></thead><tbody>{% for pago in pagos_proximos %}<tr><td><a class="fila" href="{% url 'gestion:factura' pago.factura.pk %}">{{ pago.factura.proveedor.razon_social }}</a><br><small>{{ pago.factura.numero }}</small></td><td>{% if pago.vencida %}<span class="estado rechazado">Vencida</span><br>{% endif %}{{ pago.factura.vencimiento|date:'d M Y' }}</td><td class="num">{{ pago.saldo|dinero:pago.factura.moneda }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="vacio">No hay facturas aprobadas pendientes de pago.</div>{% endif %}
+  </section>
+  {% endif %}
+  <section class="tarjeta dashboard-accesos">
+    <div class="cab"><div><span class="eyebrow">TU OPERACIÓN</span><h2>Accesos rápidos</h2></div></div>
+    {% if request.user|puede:'gestion:agenda' %}<a href="{% url 'gestion:agenda' %}"><span>{% include 'parciales/ico.html' with n='embudo' %}<b>Agenda comercial<small>Actividades y próximos contactos</small></b></span>↗</a>{% endif %}
+    {% if request.user|puede:'inventario:stock' %}<a href="{% url 'inventario:stock' %}"><span>{% include 'parciales/ico.html' with n='inventario' %}<b>Inventario<small>{{ pendientes.bajo_minimo }} productos bajo el mínimo</small></b></span>↗</a>{% endif %}
+    {% if request.user|puede:'gestion:reportes' %}<a href="{% url 'gestion:reportes' %}"><span>{% include 'parciales/ico.html' with n='contabilidad' %}<b>Reportes<small>Ventas y antigüedad de deuda</small></b></span>↗</a>{% endif %}
+    {% if request.user|puede:'gestion:preparacion' %}<a href="{% url 'gestion:preparacion' %}"><span>{% include 'parciales/ico.html' with n='admin' %}<b>Preparación de empresa<small>Configuración y conexiones pendientes</small></b></span>↗</a>{% endif %}
+    <a href="{% url 'core:cambiar_empresa' %}"><span>{% include 'parciales/ico.html' with n='inicio' %}<b>Espacio de trabajo<small>Consultar empresas disponibles</small></b></span>↗</a>
+  </section>
+</div>

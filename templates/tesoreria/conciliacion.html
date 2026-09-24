@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Conciliación{% endblock %}
+{% block miga %}{% if request.user|puede:"tesoreria:cobranza" %}<a href="{% url 'tesoreria:cobranza' %}">Cobranza</a>{% endif %} › Conciliación bancaria{% endblock %}
+{% block encabezado %}Conciliación bancaria{% endblock %}
+{% block contenido %}
+{% if not cuenta %}<div class="tarjeta"><div class="vacio"><b>No hay cuentas bancarias</b>Créalas en Administración › Tesorería › Cuentas bancarias.</div></div>
+{% else %}
+<div class="rejilla lados">
+  <div class="tarjeta">
+    <div class="cab">
+      <form method="get" class="filtros"><select name="cuenta" onchange="this.form.submit()">{% for c in cuentas %}<option value="{{ c.pk }}" {% if c == cuenta %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></form>
+      <span class="tenue" style="margin-left:auto">{{ sin_conciliar }} sin conciliar</span>
+      <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="cuenta" value="{{ cuenta.pk }}"><button class="boton primario" name="conciliar" value="1">Conciliar ahora</button></form>
+    </div>
+    {% if lineas %}<table class="datos"><thead><tr><th>Fecha</th><th>Descripción</th><th>Referencia</th><th class="num">Monto</th><th>Cobro</th></tr></thead>
+    {% for l in lineas %}<tr><td>{{ l.fecha|date:"d M Y" }}</td><td>{{ l.descripcion }}</td><td class="mono"><small>{{ l.referencia|default:"—" }}</small></td><td class="num">{{ l.monto|floatformat:2 }}</td><td>{% if l.conciliada %}<span class="estado conciliado">{% if l.movimiento.comprobante %}{{ l.movimiento.comprobante.numero_completo }}{% else %}conciliado{% endif %}</span>{% else %}<span class="estado pendiente">sin cruzar</span>{% endif %}</td></tr>{% endfor %}</table>
+    {% else %}<div class="vacio"><b>Sin extracto</b>Pega el extracto del banco a la derecha.</div>{% endif %}
+  </div>
+  <div class="tarjeta"><div class="cab"><h2>Importar extracto</h2></div>
+    <form method="post" class="cuerpo">{% csrf_token %}<input type="hidden" name="cuenta" value="{{ cuenta.pk }}">
+      <div class="campo"><label>Una línea por movimiento</label><textarea name="extracto" rows="10" placeholder="15/09/2026;Abono transferencia;7552.00;OP-4451&#10;16/09/2026;Comisión;-12.50;"></textarea><span class="ayuda">Formato: fecha;descripción;monto;referencia. Monto negativo si es cargo.</span></div>
+      <button class="boton" name="importar" value="1">Importar</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

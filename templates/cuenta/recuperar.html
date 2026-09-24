@@ -1,0 +1,1 @@
+{% extends 'cuenta/base_acceso.html' %}{% block contenido %}<h1>Recuperar acceso</h1><p>Ingresa el correo asociado a tu usuario.</p><form method="post">{% csrf_token %}{{ form.as_p }}<button class="boton primario">Enviar enlace</button></form>{% endblock %}

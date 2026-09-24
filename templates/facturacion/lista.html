@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Comprobantes{% endblock %}
+{% block encabezado %}Comprobantes{% endblock %}
+{% block contenido %}
+<div class="tarjeta">
+  <div class="cab">
+    <form class="filtros" method="get"><input type="search" name="q" value="{{ q }}" placeholder="Serie, cliente, pedido">
+      <select name="tipo"><option value="">Todos los tipos</option>{% for v, n in tipos %}<option value="{{ v }}" {% if tipo == v %}selected{% endif %}>{{ n }}</option>{% endfor %}</select>
+      <input type="hidden" name="estado" value="{{ estado }}"><button class="boton">Filtrar</button></form>
+    <div class="pastillas" style="margin-left:auto"><a class="pastilla {% if not estado %}activa{% endif %}" href="?tipo={{ tipo }}&q={{ q }}">Todos</a>{% for v, n in estados %}{% if v in 'por_enviar,enviado,aceptado,rechazado,anulado' %}<a class="pastilla {% if estado == v %}activa{% endif %}" href="?estado={{ v }}&tipo={{ tipo }}&q={{ q }}">{{ n }}</a>{% endif %}{% endfor %}</div>
+  </div>
+  {% if page_obj.object_list %}
+  <div class="envuelve"><table class="datos">
+    <thead><tr><th>Número</th><th>Tipo</th><th>Cliente</th><th>Emisión</th><th>Estado</th><th class="num">Total</th><th class="num">Saldo</th></tr></thead>
+    {% for c in page_obj %}<tr>
+      <td>{% if request.user|puede:"facturacion:detalle" %}<a class="fila mono" href="{% url 'facturacion:detalle' c.pk %}">{{ c.numero_completo }}</a>{% endif %}</td>
+      <td><small>{{ c.get_tipo_display }}</small></td>
+      <td>{{ c.tercero.razon_social }}</td>
+      <td>{{ c.fecha_emision|date:"d M Y" }}</td>
+      <td><span class="estado {{ c.estado }}">{{ c.get_estado_display }}</span></td>
+      <td class="num">{{ c.total|dinero:c.moneda }}</td>
+      <td class="num">{% if c.tipo == '07' %}—{% elif c.saldo > 0 %}<b>{{ c.saldo|floatformat:2 }}</b>{% else %}<span class="estado pagado">pagado</span>{% endif %}</td>
+    </tr>{% endfor %}
+  </table></div>
+  {% include "parciales/paginacion.html" %}
+  {% else %}<div class="vacio"><b>Sin comprobantes</b>Se emiten desde un pedido entregado.</div>{% endif %}
+</div>
+{% endblock %}

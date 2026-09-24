@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Cobranza{% endblock %}
+{% block encabezado %}Cobranza{% endblock %}
+{% block acciones %}{% if request.user|puede:"tesoreria:movimientos" %}<a class="boton" href="{% url 'tesoreria:movimientos' %}">Cobros y pagos</a>{% endif %}{% if request.user|puede:"tesoreria:conciliacion" %}<a class="boton" href="{% url 'tesoreria:conciliacion' %}">Conciliación</a>{% endif %}{% endblock %}
+{% block contenido %}
+<div class="rejilla c3" style="margin-bottom:16px">
+  <div class="tarjeta indicador"><small>Por cobrar</small><div class="valor">{{ total|dinero:request.empresa.moneda_base }}</div><div class="detalle">{{ pendientes|length }} comprobante{{ pendientes|length|pluralize }}</div></div>
+  <div class="tarjeta indicador"><small>Vencido</small><div class="valor {% if vencido %}alerta{% endif %}">{{ vencido|dinero:request.empresa.moneda_base }}</div></div>
+  <div class="tarjeta indicador"><small>Por vencer</small><div class="valor">{{ por_vencer|dinero:request.empresa.moneda_base }}</div></div>
+</div>
+<div class="tarjeta">
+  <div class="cab"><h2>Comprobantes con saldo</h2><span class="tenue">Los vencidos van primero.</span></div>
+  {% if pendientes %}
+  <div class="envuelve"><table class="datos">
+    <thead><tr><th>Comprobante</th><th>Cliente</th><th>Vence</th><th class="num">Total</th><th class="num">Saldo</th><th style="width:420px">Registrar cobro</th></tr></thead>
+    {% for c in pendientes %}<tr>
+      <td>{% if request.user|puede:"facturacion:detalle" %}<a class="fila mono" href="{% url 'facturacion:detalle' c.pk %}">{{ c.numero_completo }}</a>{% endif %}</td>
+      <td>{{ c.tercero.razon_social }}{% if c.tercero.telefono %}<br><small>{{ c.tercero.telefono }}</small>{% endif %}</td>
+      <td>{% if c.vencido %}<span class="estado cancelado">{{ c.dias }} día{{ c.dias|pluralize }}</span>{% else %}{{ c.fecha_vencimiento|date:"d M"|default:"—" }}{% endif %}</td>
+      <td class="num">{{ c.total|dinero:c.moneda }}</td>
+      <td class="num"><b>{{ c.saldo|dinero:c.moneda }}</b></td>
+      <td>{% if request.user|puede:"tesoreria:cobrar" %}<form method="post" action="{% url 'tesoreria:cobrar' c.pk %}" style="display:grid;grid-template-columns:100px 1fr 1fr auto;gap:6px;align-items:center">{% csrf_token %}
+        <input type="number" name="monto" step="0.01" min="0.01" max="{{ c.saldo }}" value="{{ c.saldo }}" title="Monto">
+        <select name="metodo">{% for v, n in form.fields.metodo.choices %}<option value="{{ v }}">{{ n }}</option>{% endfor %}</select>
+        <input type="text" name="referencia_externa" placeholder="N.º operación" title="Referencia">
+        <input type="hidden" name="fecha" value="{% now 'Y-m-d' %}">
+        <select name="cuenta" title="Cuenta bancaria"><option value="">Sin cuenta bancaria</option>{% for cuenta in form.fields.cuenta.queryset %}{% if cuenta.moneda == c.moneda %}<option value="{{ cuenta.pk }}">{{ cuenta }} ({{ cuenta.moneda }})</option>{% endif %}{% endfor %}</select>
+        {% if c.moneda != request.empresa.moneda_base %}<input type="number" name="tipo_cambio" required min="0.000001" step="0.000001" placeholder="TC del cobro" title="{{ request.empresa.moneda_base }} por 1 {{ c.moneda }}">{% endif %}
+        <button class="boton exito chico">Cobrar</button></form>{% endif %}</td>
+    </tr>{% endfor %}
+  </table></div>
+  {% else %}<div class="vacio"><b>Nada por cobrar</b>Todos los comprobantes aceptados están pagados.</div>{% endif %}
+</div>
+{% endblock %}

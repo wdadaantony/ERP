@@ -1,0 +1,7 @@
+{% extends 'base.html' %}{% load erp %}
+{% block titulo %}Cuentas por pagar{% endblock %}
+{% block encabezado %}Cuentas por pagar{% endblock %}
+{% block acciones %}{% if request.user|puede:'gestion:nueva_factura' %}<a class="boton primario" href="{% url 'gestion:nueva_factura' %}">Registrar factura</a>{% endif %}{% endblock %}
+{% block contenido %}<div class="tarjeta"><div class="cab"><form class="filtros"><input type="search" name="q" value="{{ q }}" placeholder="Proveedor o número" aria-label="Buscar facturas"><button class="boton">Buscar</button></form></div>
+<table class="datos"><thead><tr><th>Factura</th><th>Proveedor</th><th>Vencimiento</th><th>Estado</th><th>Total</th><th>Saldo</th></tr></thead><tbody>
+{% for f in page_obj %}<tr><td><a href="{% url 'gestion:factura' f.pk %}">{{ f.numero }}</a></td><td>{{ f.proveedor.razon_social }}</td><td>{{ f.vencimiento|date:'d/m/Y' }}</td><td><span class="estado {{ f.estado }}">{{ f.get_estado_display }}</span></td><td>{{ f.total|dinero:f.moneda }}</td><td>{{ f.saldo|dinero:f.moneda }}</td></tr>{% empty %}<tr><td colspan="6" class="vacio">No hay facturas registradas.</td></tr>{% endfor %}</tbody></table>{% include 'parciales/paginacion.html' %}</div>{% endblock %}

@@ -1,0 +1,7 @@
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="paginacion">
+  <span>{{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ page_obj.paginator.count }}</span>
+  {% if page_obj.has_previous %}<a class="boton chico" href="?{{ consulta }}&pagina={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}
+  {% if page_obj.has_next %}<a class="boton chico" href="?{{ consulta }}&pagina={{ page_obj.next_page_number }}">Siguiente</a>{% endif %}
+</div>
+{% endif %}

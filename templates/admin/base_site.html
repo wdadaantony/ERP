@@ -1,0 +1,5 @@
+{% extends "admin/base.html" %}
+{% load static %}
+{% block title %}{{ title }} · Administración ERP{% endblock %}
+{% block branding %}<div id="site-name"><a href="{% url 'admin:index' %}">ERP <span class="admin-workspace">/ Administración</span></a></div>{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-workspace.css' %}">{% endblock %}

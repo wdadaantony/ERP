@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Recibir {{ orden.numero }}{% endblock %}
+{% block miga %}{% if request.user|puede:"compras:lista" %}<a href="{% url 'compras:lista' %}">Compras</a>{% endif %} › {% if request.user|puede:"compras:detalle" %}<a href="{% url 'compras:detalle' orden.pk %}">{{ orden.numero }}</a>{% endif %} › Recibir{% endblock %}
+{% block encabezado %}Recibir mercadería de {{ orden.proveedor.razon_social }}{% endblock %}
+{% block contenido %}
+<form method="post" class="formulario">{% csrf_token %}
+<div class="rejilla lados">
+  <div class="tarjeta"><div class="cab"><h2>Qué llegó</h2><span class="tenue">Ajusta las cantidades si el proveedor mandó menos.</span></div>
+    <table class="datos lineas"><thead><tr><th>Producto</th><th class="num">Pendiente</th><th class="num" style="width:140px">Recibido ahora</th></tr></thead>
+    {% for l in lineas %}<tr><td><b>{{ l.producto.nombre }}</b><br><small class="mono">{{ l.producto.codigo }}</small></td><td class="num">{{ l.pendiente_recepcion|cantidad }} {{ l.producto.unidad_medida.codigo }}</td><td class="num"><input type="number" step="0.01" min="0" max="{{ l.pendiente_recepcion }}" name="cantidad_{{ l.pk }}" value="{{ l.pendiente_recepcion|cantidad }}" {% if l.pendiente_recepcion <= 0 %}disabled{% endif %}></td></tr>{% endfor %}</table>
+  </div>
+  <div style="display:grid;gap:16px">
+    <div class="tarjeta"><div class="cuerpo">
+      <div class="campo"><label>Guía del proveedor</label><input type="text" name="guia_proveedor" placeholder="T001-00001234"></div>
+      <p class="tenue">Al confirmar, entra al almacén {{ orden.almacen_destino }}, se recalcula el costo promedio y, si la orden nació de un pedido en espera, se intenta reservarle el stock.</p>
+      <div style="display:flex;gap:8px;justify-content:flex-end">{% if request.user|puede:"compras:detalle" %}<a class="boton" href="{% url 'compras:detalle' orden.pk %}">Cancelar</a>{% endif %}<button class="boton exito">Confirmar ingreso</button></div>
+    </div></div>
+  </div>
+</div>
+</form>
+{% endblock %}

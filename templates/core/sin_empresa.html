@@ -1,0 +1,8 @@
+{% load static %}<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Sin empresa · ERP</title>
+<link rel="stylesheet" href="{% static 'css/erp.css' %}"></head>
+<body><div class="pantalla-cuenta"><div class="caja-cuenta">
+<h1>Tu usuario no tiene empresa asignada</h1>
+<p class="tenue">Pídele al administrador que te agregue a una empresa en Administración › Usuarios.</p>
+<form method="post" action="{% url 'cuenta:logout' %}">{% csrf_token %}<button class="boton">Salir</button></form>
+</div></div></body></html>

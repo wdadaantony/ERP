@@ -1,0 +1,1 @@
+{% extends 'cuenta/base_acceso.html' %}{% block contenido %}<h1>Nueva contraseña</h1>{% if validlink %}<form method="post">{% csrf_token %}{{ form.as_p }}<button class="boton primario">Guardar contraseña</button></form>{% else %}<p>El enlace expiró o ya fue utilizado. Solicita uno nuevo.</p><a href="{% url 'cuenta:recuperar' %}">Recuperar acceso</a>{% endif %}{% endblock %}

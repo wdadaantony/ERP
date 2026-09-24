@@ -1,0 +1,62 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}{{ lead.nombre }}{% endblock %}
+{% block miga %}{% if request.user|puede:"crm:embudo" %}<a href="{% url 'crm:embudo' %}">CRM</a>{% endif %} › {{ lead.nombre }}{% endblock %}
+{% block encabezado %}{{ lead.nombre }} <span class="estado {{ lead.estado }}" style="vertical-align:middle;margin-left:6px">{{ lead.get_estado_display }}</span>{% endblock %}
+{% block acciones %}
+{% if request.user|puede:"crm:editar" %}<a class="boton" href="{% url 'crm:editar' lead.pk %}">Editar</a>{% endif %}
+{% if lead.esta_abierto %}
+  {% if not lead.tercero %}{% if request.user|puede:"crm:a_cliente" %}<form class="inline" method="post" action="{% url 'crm:a_cliente' lead.pk %}" style="display:flex;gap:6px">{% csrf_token %}{% if not lead.numero_documento %}<input type="text" name="numero_documento" placeholder="DNI o RUC" style="width:130px" required>{% endif %}<button class="boton">Crear cliente</button></form>{% endif %}
+  {% elif not lead.pedido %}{% if request.user|puede:"crm:a_pedido" %}<form class="inline" method="post" action="{% url 'crm:a_pedido' lead.pk %}" style="display:flex;gap:6px">{% csrf_token %}{% if almacenes.count > 1 %}<select name="almacen">{% for a in almacenes %}<option value="{{ a.pk }}">{{ a }}</option>{% endfor %}</select>{% else %}<input type="hidden" name="almacen" value="{{ almacenes.first.pk }}">{% endif %}<button class="boton primario">Crear cotización</button></form>{% endif %}
+  {% else %}{% if request.user|puede:"ventas:detalle" %}<a class="boton primario" href="{% url 'ventas:detalle' lead.pedido.pk %}">Ver {{ lead.pedido.numero }}</a>{% endif %}{% endif %}
+{% endif %}
+{% endblock %}
+{% block contenido %}
+<div class="rejilla lados">
+  <div style="display:grid;gap:16px">
+    {% if lead.esta_abierto %}
+    <div class="tarjeta"><div class="pasos">{% for v, n in etapas %}<div class="paso {% if v == lead.estado %}actual{% endif %}">{% if request.user|puede:"crm:mover" %}<form method="post" action="{% url 'crm:mover' lead.pk %}" class="inline">{% csrf_token %}<input type="hidden" name="etapa" value="{{ v }}"><input type="hidden" name="volver" value="{{ request.path }}"><button class="punto" style="cursor:pointer;font:inherit" title="Mover a {{ n }}">{{ forloop.counter }}</button></form>{% endif %}{{ n }}</div>{% endfor %}</div></div>
+    {% endif %}
+    <div class="tarjeta"><div class="cab"><h2>Actividades</h2></div>
+      <form method="post" class="cuerpo" style="border-bottom:1px solid var(--linea)">{% csrf_token %}<div style="display:grid;grid-template-columns:140px 1fr auto;gap:8px;align-items:start">{{ form.tipo }}{{ form.detalle }}<button class="boton">Registrar</button></div></form>
+      {% if actividades %}<table class="datos">{% for a in actividades %}<tr><td style="width:120px"><small>{{ a.creado_en|date:"d M H:i" }}</small></td><td><b>{{ a.get_tipo_display }}</b> <small>· {{ a.usuario|default:"" }}</small><br>{{ a.detalle|linebreaksbr }}</td></tr>{% endfor %}</table>
+      {% else %}<div class="vacio">Sin actividades. Registra la primera llamada o mensaje.</div>{% endif %}
+    </div>
+  </div>
+  <div style="display:grid;gap:16px">
+    <div class="tarjeta"><div class="cab"><h2>Contacto</h2></div><div class="cuerpo"><dl class="ficha">
+      {% if lead.empresa_lead %}<dt>Empresa</dt><dd>{{ lead.empresa_lead }}</dd>{% endif %}
+      {% if lead.email %}<dt>Correo</dt><dd><a href="mailto:{{ lead.email }}">{{ lead.email }}</a></dd>{% endif %}
+      {% if lead.telefono %}<dt>Teléfono</dt><dd><a href="https://wa.me/{{ lead.telefono|cut:' '|cut:'+' }}" target="_blank">{{ lead.telefono }}</a></dd>{% endif %}
+      {% if lead.movil %}<dt>Móvil</dt><dd><a href="https://wa.me/{{ lead.movil|cut:' '|cut:'+' }}" target="_blank">{{ lead.movil }}</a></dd>{% endif %}
+      {% if lead.numero_documento %}<dt>Documento</dt><dd class="mono">{{ lead.numero_documento }}</dd>{% endif %}
+      {% if lead.direccion %}<dt>Dirección</dt><dd>{{ lead.direccion }}</dd>{% endif %}
+      {% if lead.ciudad %}<dt>Ciudad</dt><dd>{{ lead.ciudad }}</dd>{% endif %}
+      {% if lead.region %}<dt>Región</dt><dd>{{ lead.region }}</dd>{% endif %}
+      {% if lead.pais %}<dt>País</dt><dd>{{ lead.pais }}</dd>{% endif %}
+      {% if lead.idioma %}<dt>Idioma</dt><dd>{{ lead.idioma }}</dd>{% endif %}
+      <dt>Vendedor</dt><dd>{{ lead.vendedor|default:"sin asignar" }}</dd>
+      {% if lead.equipo_ventas %}<dt>Equipo</dt><dd>{{ lead.equipo_ventas }}</dd>{% endif %}
+      {% if lead.prioridad %}<dt>Prioridad</dt><dd>{{ lead.get_prioridad_display }}</dd>{% endif %}
+      {% if lead.etiquetas %}<dt>Etiquetas</dt><dd>{% for e in lead.etiquetas %}<span class="estado">{{ e }}</span> {% endfor %}</dd>{% endif %}
+      {% if lead.valor_estimado %}<dt>Ingreso esperado</dt><dd>{{ lead.valor_estimado|dinero }}</dd>{% endif %}
+      {% if lead.probabilidad %}<dt>Probabilidad</dt><dd>{{ lead.probabilidad }}%</dd>{% endif %}
+      {% if lead.cierre_esperado %}<dt>Cierre esperado</dt><dd>{{ lead.cierre_esperado|date:"d M Y" }}</dd>{% endif %}
+      {% if lead.referido_por %}<dt>Referido por</dt><dd>{{ lead.referido_por }}</dd>{% endif %}
+      {% if lead.tercero %}<dt>Cliente</dt><dd>{% if request.user|puede:"terceros:detalle" %}<a href="{% url 'terceros:detalle' lead.tercero.pk %}">{{ lead.tercero.razon_social }}</a>{% endif %}</dd>{% endif %}
+    </dl>{% if lead.interes %}<p style="margin-top:10px;white-space:pre-line">{{ lead.interes }}</p>{% endif %}
+    {% if lead.notas_internas %}<p class="tenue" style="margin-top:10px;white-space:pre-line"><b>Notas internas:</b> {{ lead.notas_internas }}</p>{% endif %}</div></div>
+    <div class="tarjeta"><div class="cab"><h2>Origen</h2></div><div class="cuerpo"><dl class="ficha"><dt>Canal</dt><dd>{{ lead.origen|default:"—" }}</dd>{% if lead.campania %}<dt>Campaña</dt><dd>{{ lead.campania }}</dd>{% endif %}{% if lead.medio %}<dt>Medio</dt><dd>{{ lead.medio }}</dd>{% endif %}{% for k, v in lead.utm.items %}<dt class="mono">{{ k }}</dt><dd><small>{{ v }}</small></dd>{% endfor %}<dt>Creado</dt><dd>{{ lead.creado_en|date:"d M Y H:i" }}</dd>{% if lead.conversion_enviada %}<dt>Conversión</dt><dd><span class="estado cerrado">enviada a Ads</span></dd>{% endif %}</dl></div></div>
+    <div class="tarjeta"><div class="cab"><h2>Archivos</h2></div><div class="cuerpo">
+      {% if archivos %}<ul style="margin:0 0 10px;padding-left:18px">{% for a in archivos %}<li><a href="{% url 'core:archivo' 'lead' a.pk %}" target="_blank">{{ a.nombre|default:a.archivo.name }}</a></li>{% endfor %}</ul>{% else %}<div class="vacio">Sin archivos.</div>{% endif %}
+      <form method="post" action="{% url 'crm:subir_archivo' lead.pk %}" enctype="multipart/form-data" style="display:flex;gap:6px">{% csrf_token %}{{ form_archivo.nombre }}{{ form_archivo.archivo }}<button class="boton">Subir</button></form>
+    </div></div>
+    {% if lead.esta_abierto %}
+    <details class="tarjeta"><summary style="padding:12px 16px;cursor:pointer;font-weight:500">Cerrar lead</summary>
+      <div class="cuerpo" style="padding-top:0;display:grid;gap:8px">
+        {% if request.user|puede:"crm:cerrar" %}<form method="post" action="{% url 'crm:cerrar' lead.pk %}">{% csrf_token %}<input type="hidden" name="resultado" value="ganado"><button class="boton exito" style="width:100%">Ganado</button></form>{% endif %}
+        {% if request.user|puede:"crm:cerrar" %}<form method="post" action="{% url 'crm:cerrar' lead.pk %}" style="display:grid;gap:6px">{% csrf_token %}<input type="hidden" name="resultado" value="perdido"><input type="text" name="motivo" placeholder="Motivo de la pérdida"><button class="boton peligro">Perdido</button></form>{% endif %}
+      </div></details>
+    {% elif lead.motivo_perdida %}<div class="bloque-alerta"><b>Perdido:</b> {{ lead.motivo_perdida }}</div>{% endif %}
+  </div>
+</div>
+{% endblock %}

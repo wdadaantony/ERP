@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block encabezado %}{{ titulo }}{% endblock %}
+{% block contenido %}
+<div class="tarjeta" style="max-width:760px"><div class="cuerpo">
+{% if aviso %}<p class="bloque-alerta" style="margin-bottom:24px">{{ aviso }}</p>{% endif %}
+<form method="post" class="formulario" enctype="multipart/form-data">{% csrf_token %}
+{% include 'parciales/formulario.html' %}<button class="boton primario">Guardar y continuar</button>
+</form></div></div>
+{% endblock %}

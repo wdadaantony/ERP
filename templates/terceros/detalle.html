@@ -1,0 +1,50 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}{{ tercero.razon_social }}{% endblock %}
+{% block miga %}{% if request.user|puede:"terceros:lista" %}<a href="{% url 'terceros:lista' %}">Clientes y proveedores</a>{% endif %} › {{ tercero.numero_documento }}{% endblock %}
+{% block encabezado %}{{ tercero.razon_social }}{% endblock %}
+{% block acciones %}
+{% if request.user|puede:"terceros:editar" %}<a class="boton" href="{% url 'terceros:editar' tercero.pk %}">Editar</a>{% endif %}
+{% if tercero.es_cliente %}{% if request.user|puede:"ventas:nuevo" %}<a class="boton primario" href="{% url 'ventas:nuevo' %}?tercero={{ tercero.pk }}">Nueva cotización</a>{% endif %}{% endif %}
+{% endblock %}
+{% block contenido %}
+<div class="rejilla lados">
+  <div style="display:grid;gap:16px">
+    {% if tercero.es_cliente %}
+    <div class="tarjeta">
+      <div class="cab"><h2>Pedidos</h2>{% if saldo %}<span class="tenue">Saldo por cobrar: <b>{{ saldo|dinero:request.empresa.moneda_base }}</b></span>{% endif %}</div>
+      {% if pedidos %}<table class="datos"><thead><tr><th>Número</th><th>Fecha</th><th>Vendedor</th><th>Estado</th><th class="num">Total</th></tr></thead>
+      {% for p in pedidos %}<tr><td>{% if request.user|puede:"ventas:detalle" %}<a class="fila" href="{% url 'ventas:detalle' p.pk %}">{{ p.numero }}</a>{% endif %}</td><td>{{ p.fecha|date:"d M Y" }}</td><td>{{ p.vendedor|default:"—" }}</td><td><span class="estado {{ p.estado }}">{{ p.get_estado_display }}</span></td><td class="num">{{ p.total|dinero:p.moneda }}</td></tr>{% endfor %}</table>
+      {% else %}<div class="vacio">Todavía no le hemos vendido.</div>{% endif %}
+    </div>
+    <div class="tarjeta">
+      <div class="cab"><h2>Comprobantes</h2></div>
+      {% if comprobantes %}<table class="datos"><thead><tr><th>Número</th><th>Emisión</th><th>Vence</th><th>Estado</th><th class="num">Total</th><th class="num">Saldo</th></tr></thead>
+      {% for c in comprobantes %}<tr><td>{% if request.user|puede:"facturacion:detalle" %}<a class="fila" href="{% url 'facturacion:detalle' c.pk %}">{{ c.numero_completo }}</a>{% endif %}</td><td>{{ c.fecha_emision|date:"d M Y" }}</td><td>{{ c.fecha_vencimiento|date:"d M Y"|default:"—" }}</td><td><span class="estado {{ c.estado }}">{{ c.get_estado_display }}</span></td><td class="num">{{ c.total|floatformat:2 }}</td><td class="num">{% if c.saldo > 0 %}<b>{{ c.saldo|floatformat:2 }}</b>{% else %}—{% endif %}</td></tr>{% endfor %}</table>
+      {% else %}<div class="vacio">Sin comprobantes.</div>{% endif %}
+    </div>
+    {% endif %}
+    {% if tercero.es_proveedor %}
+    <div class="tarjeta">
+      <div class="cab"><h2>Órdenes de compra</h2></div>
+      {% if ordenes %}<table class="datos">{% for o in ordenes %}<tr><td>{% if request.user|puede:"compras:detalle" %}<a class="fila" href="{% url 'compras:detalle' o.pk %}">{{ o.numero }}</a>{% endif %}</td><td>{{ o.fecha|date:"d M Y" }}</td><td><span class="estado {{ o.estado }}">{{ o.get_estado_display }}</span></td><td class="num">{{ o.total|dinero:o.moneda }}</td></tr>{% endfor %}</table>
+      {% else %}<div class="vacio">Todavía no le hemos comprado.</div>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+  <div style="display:grid;gap:16px">
+    <div class="tarjeta"><div class="cab"><h2>Datos</h2></div><div class="cuerpo"><dl class="ficha">
+      <dt>Documento</dt><dd class="mono">{{ tercero.get_tipo_documento_display }} {{ tercero.numero_documento }}</dd>
+      <dt>Tipo</dt><dd>{% if tercero.es_cliente %}Cliente{% endif %}{% if tercero.es_cliente and tercero.es_proveedor %} y {% endif %}{% if tercero.es_proveedor %}Proveedor{% endif %}</dd>
+      {% if tercero.direccion_fiscal %}<dt>Dirección</dt><dd>{{ tercero.direccion_fiscal }}</dd>{% endif %}
+      {% if tercero.email %}<dt>Correo</dt><dd>{{ tercero.email }}</dd>{% endif %}
+      {% if tercero.telefono %}<dt>Teléfono</dt><dd>{{ tercero.telefono }}</dd>{% endif %}
+      <dt>Condición</dt><dd>{{ tercero.condicion_pago|default:"Contado" }}</dd>
+      {% if tercero.linea_credito %}<dt>Línea de crédito</dt><dd>{{ tercero.linea_credito|dinero:request.empresa.moneda_base }}</dd>{% endif %}
+      <dt>Vendedor</dt><dd>{{ tercero.vendedor_asignado|default:"—" }}</dd>
+      {% if tercero.ids_externos %}<dt>Ids externos</dt><dd class="mono">{{ tercero.ids_externos }}</dd>{% endif %}
+    </dl></div></div>
+    {% if tercero.contactos.exists %}<div class="tarjeta"><div class="cab"><h2>Contactos</h2></div><table class="datos">{% for c in tercero.contactos.all %}<tr><td><b>{{ c.nombre }}</b>{% if c.cargo %}<br><small>{{ c.cargo }}</small>{% endif %}</td><td><small>{{ c.email }}<br>{{ c.telefono }}</small></td></tr>{% endfor %}</table></div>{% endif %}
+    {% if tercero.direcciones.exists %}<div class="tarjeta"><div class="cab"><h2>Direcciones de entrega</h2></div><table class="datos">{% for d in tercero.direcciones.all %}<tr><td><b>{{ d.etiqueta }}</b>{% if d.es_principal %} <span class="estado cerrado">principal</span>{% endif %}<br><small>{{ d.direccion }}{% if d.referencia %} · {{ d.referencia }}{% endif %}</small></td></tr>{% endfor %}</table></div>{% endif %}
+  </div>
+</div>
+{% endblock %}

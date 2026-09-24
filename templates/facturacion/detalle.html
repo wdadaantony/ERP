@@ -1,0 +1,47 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}{{ c.numero_completo }}{% endblock %}
+{% block miga %}{% if request.user|puede:"facturacion:lista" %}<a href="{% url 'facturacion:lista' %}">Comprobantes</a>{% endif %} › {{ c.numero_completo }}{% endblock %}
+{% block encabezado %}{{ c.get_tipo_display }} {{ c.numero_completo }} <span class="estado {{ c.estado }}" style="vertical-align:middle;margin-left:6px">{{ c.get_estado_display }}</span>{% endblock %}
+{% block acciones %}
+  {% if c.estado == E.RECHAZADO %}{% if request.user|puede:"facturacion:reenviar" %}<form class="inline" method="post" action="{% url 'facturacion:reenviar' c.pk %}">{% csrf_token %}<button class="boton primario">Reenviar a SUNAT</button></form>{% endif %}{% endif %}
+  {% if c.pedido %}{% if request.user|puede:"ventas:detalle" %}<a class="boton" href="{% url 'ventas:detalle' c.pedido.pk %}">Pedido {{ c.pedido.numero }}</a>{% endif %}{% endif %}
+  {% if c.pdf %}<a class="boton" href="{% url 'core:archivo' 'pdf' c.pk %}" target="_blank">PDF</a>{% endif %}
+{% endblock %}
+{% block contenido %}
+{% if c.estado == E.RECHAZADO %}<div class="bloque-alerta" style="margin-bottom:16px"><b>SUNAT rechazó este comprobante</b> con el código {{ c.codigo_respuesta }}: {{ c.mensaje_respuesta }}<br><small>El correlativo se conserva. Corrige los datos del cliente o del producto y reenvía.</small></div>{% endif %}
+<div class="rejilla lados">
+  <div style="display:grid;gap:16px">
+    <div class="tarjeta"><div class="cab"><h2>Detalle</h2></div>
+      <table class="datos"><thead><tr><th>Descripción</th><th class="num">Cant.</th><th class="num">P. unit.</th><th class="num">IGV</th><th class="num">Total</th></tr></thead>
+      {% for l in lineas %}<tr><td>{{ l.descripcion }}<br><small class="mono">{{ l.producto.codigo }} · {{ l.unidad_medida }}</small></td><td class="num">{{ l.cantidad|cantidad }}</td><td class="num">{{ l.precio_unitario|floatformat:2 }}</td><td class="num">{{ l.igv|floatformat:2 }}</td><td class="num">{{ l.total|floatformat:2 }}</td></tr>{% endfor %}
+      <tfoot><tr><td colspan="4" class="num">Op. gravada</td><td class="num">{{ c.subtotal|floatformat:2 }}</td></tr><tr><td colspan="4" class="num">IGV 18%</td><td class="num">{{ c.igv|floatformat:2 }}</td></tr><tr><td colspan="4" class="num">Total</td><td class="num">{{ c.total|dinero:c.moneda }}</td></tr>{% if c.tipo != T.NOTA_CREDITO %}<tr><td colspan="4" class="num">Cobrado</td><td class="num">{{ c.total_cobrado|floatformat:2 }}</td></tr><tr><td colspan="4" class="num"><b>Saldo</b></td><td class="num"><b>{{ c.saldo|floatformat:2 }}</b></td></tr>{% endif %}</tfoot></table>
+    </div>
+
+    {% if c.tipo != T.NOTA_CREDITO %}
+    <div class="tarjeta"><div class="cab"><h2>Cobros</h2>{% if c.saldo > 0 and c.estado == E.ACEPTADO or c.estado == E.OBSERVADO and c.saldo > 0 %}{% if request.user|puede:"tesoreria:cobranza" %}<a href="{% url 'tesoreria:cobranza' %}">Registrar en cobranza</a>{% endif %}{% endif %}</div>
+      {% if cobros %}<table class="datos">{% for m in cobros %}<tr><td>{{ m.fecha|date:"d M Y" }}</td><td>{{ m.get_metodo_display }}{% if m.extorna_a_id %}<br><small>Extorno de #{{ m.extorna_a_id }}</small>{% endif %}</td><td class="mono"><small>{{ m.referencia_externa|default:"—" }}</small></td><td><span class="estado {{ m.estado }}">{{ m.get_estado_display }}</span></td><td class="num">{% if m.sentido == "pago" %}−{% endif %}{{ m.monto|floatformat:2 }}{% if m.sentido == "cobro" and m.estado != "anulado" and not m.ya_extornado and request.user|puede:"tesoreria:extornar" %}<details><summary>Extornar</summary><form method="post" action="{% url 'tesoreria:extornar' m.pk %}">{% csrf_token %}{{ form_extorno.as_p }}<button class="boton peligro chico">Confirmar extorno</button></form></details>{% endif %}</td></tr>{% endfor %}</table>
+      {% else %}<div class="vacio">Sin cobros todavía.</div>{% endif %}
+    </div>
+    {% endif %}
+
+    {% if notas %}<div class="tarjeta"><div class="cab"><h2>Notas de crédito y débito</h2></div><table class="datos">{% for n in notas %}<tr><td>{% if request.user|puede:"facturacion:detalle" %}<a class="fila mono" href="{% url 'facturacion:detalle' n.pk %}">{{ n.numero_completo }}</a>{% endif %}</td><td>{{ n.fecha_emision|date:"d M Y" }}</td><td><small>{{ n.motivo_nota }}</small></td><td><span class="estado {{ n.estado }}">{{ n.get_estado_display }}</span></td><td class="num">{{ n.total|floatformat:2 }}</td></tr>{% endfor %}</table></div>{% endif %}
+  </div>
+
+  <div style="display:grid;gap:16px">
+    <div class="tarjeta"><div class="cab"><h2>Cliente</h2>{% if request.user|puede:"terceros:detalle" %}<a href="{% url 'terceros:detalle' c.tercero.pk %}">Ver ficha</a>{% endif %}</div><div class="cuerpo"><dl class="ficha"><dt>Razón social</dt><dd>{{ c.tercero.razon_social }}</dd><dt>Documento</dt><dd class="mono">{{ c.tercero.get_tipo_documento_display }} {{ c.tercero.numero_documento }}</dd>{% if c.tercero.direccion_fiscal %}<dt>Dirección</dt><dd>{{ c.tercero.direccion_fiscal }}</dd>{% endif %}</dl></div></div>
+    <div class="tarjeta"><div class="cab"><h2>Emisión</h2></div><div class="cuerpo"><dl class="ficha"><dt>Fecha</dt><dd>{{ c.fecha_emision|date:"d M Y" }}</dd>{% if c.fecha_vencimiento %}<dt>Vence</dt><dd>{{ c.fecha_vencimiento|date:"d M Y" }}</dd>{% endif %}<dt>Moneda</dt><dd>{{ c.moneda }}</dd>{% if c.comprobante_afectado %}<dt>Modifica a</dt><dd>{% if request.user|puede:"facturacion:detalle" %}<a href="{% url 'facturacion:detalle' c.comprobante_afectado.pk %}">{{ c.comprobante_afectado.numero_completo }}</a>{% endif %}</dd><dt>Motivo</dt><dd>{{ c.motivo_nota }}</dd>{% endif %}</dl></div></div>
+    <div class="tarjeta"><div class="cab"><h2>Respuesta de SUNAT</h2></div><div class="cuerpo">
+      {% if c.id_externo or c.hash_cpe %}<dl class="ficha">{% if c.codigo_respuesta %}<dt>Código</dt><dd class="mono">{{ c.codigo_respuesta }}</dd>{% endif %}{% if c.hash_cpe %}<dt>Hash</dt><dd class="mono" style="word-break:break-all">{{ c.hash_cpe }}</dd>{% endif %}{% if c.id_externo %}<dt>Id OSE</dt><dd class="mono">{{ c.id_externo }}</dd>{% endif %}</dl>{% if c.mensaje_respuesta %}<p class="tenue" style="margin-top:8px">{{ c.mensaje_respuesta }}</p>{% endif %}
+      <div style="display:flex;gap:6px;margin-top:8px">{% if c.xml_firmado %}<a class="boton chico" href="{% url 'core:archivo' 'xml' c.pk %}">XML</a>{% endif %}{% if c.cdr %}<a class="boton chico" href="{% url 'core:archivo' 'cdr' c.pk %}">CDR</a>{% endif %}</div>
+      {% else %}<p class="tenue">Todavía sin respuesta. El trabajador de la cola lo envía en segundo plano.</p>{% endif %}
+    </div></div>
+    {% if asientos %}<div class="tarjeta"><div class="cab"><h2>Contabilidad</h2></div><table class="datos">{% for a in asientos %}<tr><td>{% if request.user|puede:"contabilidad:asiento" %}<a class="fila mono" href="{% url 'contabilidad:asiento' a.pk %}">{{ a.numero }}</a>{% endif %}</td><td><small>{{ a.glosa|truncatechars:40 }}</small></td></tr>{% endfor %}</table></div>{% endif %}
+    {% if puede_nota %}
+    <details class="tarjeta"><summary style="padding:12px 16px;cursor:pointer;font-weight:500">Emitir nota o corregir descripción</summary>
+      {% if request.user|puede:"facturacion:nota_credito" %}<form method="post" action="{% url 'facturacion:nota_credito' c.pk %}" class="cuerpo" style="padding-top:0">{% csrf_token %}{% include "parciales/formulario.html" with form=form_nota %}<button class="boton peligro">Emitir nota</button></form>{% endif %}
+    </details>
+    {% endif %}
+    {% if registros %}<div class="tarjeta"><div class="cab"><h2>Bitácora</h2></div><table class="datos">{% for r in registros %}<tr><td><small>{{ r.creado_en|date:"d M H:i" }}</small></td><td><small>{{ r.operacion }}</small></td><td><span class="estado {{ r.estado }}">{{ r.get_estado_display }}</span></td><td class="num"><small>{{ r.duracion_ms }} ms</small></td></tr>{% endfor %}</table></div>{% endif %}
+  </div>
+</div>
+{% endblock %}

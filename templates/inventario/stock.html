@@ -1,0 +1,31 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Inventario{% endblock %}
+{% block encabezado %}Inventario{% endblock %}
+{% block acciones %}{% if request.user|puede:"inventario:movimientos" %}<a class="boton" href="{% url 'inventario:movimientos' %}">Movimientos</a>{% endif %}{% if request.user|puede:"inventario:guias" %}<a class="boton" href="{% url 'inventario:guias' %}">Guías</a>{% endif %}{% endblock %}
+{% block contenido %}
+<div class="rejilla c3" style="margin-bottom:16px">
+  <div class="tarjeta indicador"><small>Productos con stock controlado</small><div class="valor">{{ filas|length }}</div></div>
+  <div class="tarjeta indicador"><small>Bajo el mínimo</small><div class="valor {% if bajo_minimo %}alerta{% endif %}">{{ bajo_minimo }}</div></div>
+  <div class="tarjeta indicador"><small>Valor al costo</small><div class="valor">{{ valor_total|dinero }}</div></div>
+</div>
+<div class="tarjeta">
+  <div class="cab">
+    <form class="filtros" method="get"><input type="search" name="q" value="{{ q }}" placeholder="Código o nombre"><button class="boton">Buscar</button></form>
+    <div class="pastillas" style="margin-left:auto"><a class="pastilla {% if not f %}activa{% endif %}" href="?q={{ q }}">Todos</a><a class="pastilla {% if f == 'alerta' %}activa{% endif %}" href="?f=alerta&q={{ q }}">Bajo mínimo</a></div>
+  </div>
+  <div class="envuelve"><table class="datos">
+    <thead><tr><th>Código</th><th>Producto</th><th class="num">En mano</th><th class="num">Reservado</th><th class="num">Disponible</th><th class="num">Mínimo</th><th class="num">Valor</th><th></th></tr></thead>
+    <tbody>{% for f in filas %}
+    <tr>
+      <td class="mono">{{ f.producto.codigo }}</td>
+      <td><b>{{ f.producto.nombre }}</b> <small>{{ f.producto.unidad_medida.codigo }}</small></td>
+      <td class="num">{% if f.alerta %}<span class="estado en_espera">{{ f.en_mano|cantidad }}</span>{% else %}{{ f.en_mano|cantidad }}{% endif %}</td>
+      <td class="num">{% if f.reservado %}{{ f.reservado|cantidad }}{% else %}—{% endif %}</td>
+      <td class="num"><b>{{ f.disponible|cantidad }}</b></td>
+      <td class="num">{{ f.producto.stock_minimo|cantidad }}</td>
+      <td class="num">{{ f.valor|floatformat:2 }}</td>
+      <td><a class="boton chico" href="{% url 'inventario:movimientos' %}?producto={{ f.producto.pk }}">Kardex</a></td>
+    </tr>{% empty %}<tr><td colspan="8" class="vacio">Sin productos con control de stock.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+{% endblock %}

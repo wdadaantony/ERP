@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Compras{% endblock %}
+{% block encabezado %}Compras{% endblock %}
+{% block acciones %}{% if request.user|puede:"compras:nueva" %}<a class="boton primario" href="{% url 'compras:nueva' %}">Nueva orden</a>{% endif %}{% endblock %}
+{% block contenido %}
+<div class="tarjeta">
+  <div class="cab"><div class="pastillas"><a class="pastilla {% if not estado %}activa{% endif %}" href="?">Todas</a>{% for v, n in estados %}<a class="pastilla {% if estado == v %}activa{% endif %}" href="?estado={{ v }}">{{ n }}</a>{% endfor %}</div></div>
+  {% if page_obj.object_list %}
+  <table class="datos"><thead><tr><th>Número</th><th>Proveedor</th><th>Fecha</th><th>Entrega</th><th>Estado</th><th class="num">Total</th></tr></thead>
+  {% for o in page_obj %}<tr><td>{% if request.user|puede:"compras:detalle" %}<a class="fila" href="{% url 'compras:detalle' o.pk %}">{{ o.numero }}</a>{% endif %}</td><td>{{ o.proveedor.razon_social }}</td><td>{{ o.fecha|date:"d M Y" }}</td><td>{{ o.fecha_entrega_esperada|date:"d M Y"|default:"—" }}</td><td><span class="estado {{ o.estado }}">{{ o.get_estado_display }}</span></td><td class="num">{{ o.total|dinero:o.moneda }}</td></tr>{% endfor %}</table>
+  {% include "parciales/paginacion.html" %}
+  {% else %}<div class="vacio"><b>Sin órdenes</b>Las órdenes nacen aquí o desde un pedido en espera de stock.</div>{% endif %}
+</div>
+{% endblock %}

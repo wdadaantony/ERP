@@ -1,0 +1,94 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}CRM{% endblock %}
+{% block encabezado %}Embudo de ventas{% endblock %}
+{% block acciones %}
+<div class="segmentado">
+  <a class="boton primario" href="{% url 'crm:embudo' %}?{{ querystring_actual }}">Kanban</a>
+  {% if request.user|puede:"crm:lista" %}<a class="boton" href="{% url 'crm:lista' %}?{{ querystring_actual }}">Lista</a>{% endif %}
+</div>
+{% if request.user|puede:"crm:nuevo" %}<a class="boton primario" href="{% url 'crm:nuevo' %}">Nuevo lead</a>{% endif %}
+{% endblock %}
+{% block contenido %}
+{% include "crm/_filtros.html" %}
+{% csrf_token %}
+<div class="embudo" id="embudo">
+  {% for col in columnas %}
+  <div class="columna-embudo" data-etapa="{{ col.etapa }}">
+    <div class="cab"><span>{{ col.nombre }}</span><span>{{ col.total }}{% if col.valor %} · {{ col.valor|dinero }}{% endif %}</span></div>
+    <div class="soltar-aqui">
+    {% for l in col.leads %}
+    <div class="tarjeta-lead{% if l.prioridad %} prioridad-{{ l.prioridad }}{% endif %}" draggable="true" data-id="{{ l.pk }}">
+      <b>{% if request.user|puede:"crm:detalle" %}<a href="{% url 'crm:detalle' l.pk %}" style="color:inherit">{{ l.nombre }}</a>{% endif %}</b>
+      {% if l.empresa_lead %}<small>{{ l.empresa_lead }}</small>{% endif %}
+      <small>{{ l.origen|default:"sin origen" }} · {{ l.vendedor|default:"sin asignar" }}</small>
+      {% if l.etiquetas %}<div class="etiquetas-tarjeta">{% for e in l.etiquetas %}<span class="pastilla">{{ e }}</span>{% endfor %}</div>{% endif %}
+      {% if l.valor_estimado %}<div class="monto">{{ l.valor_estimado|dinero }}</div>{% endif %}
+      {% if l.pedido %}<small>{% if request.user|puede:"ventas:detalle" %}<a href="{% url 'ventas:detalle' l.pedido.pk %}">{{ l.pedido.numero }}</a>{% endif %}</small>{% endif %}
+    </div>
+    {% empty %}<div class="vacio" style="padding:20px 8px;font-size:12px">—</div>{% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+{% block scripts %}
+{% if request.user|puede:"crm:mover" %}
+<script>
+(function () {
+  var tablero = document.getElementById("embudo");
+  if (!tablero) return;
+  var csrf = document.querySelector("[name=csrfmiddlewaretoken]").value;
+  var arrastrando = null;
+
+  tablero.addEventListener("dragstart", function (e) {
+    var tarjeta = e.target.closest(".tarjeta-lead");
+    if (!tarjeta) return;
+    arrastrando = tarjeta;
+    tarjeta.classList.add("arrastrando");
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", tarjeta.dataset.id);
+  });
+  tablero.addEventListener("dragend", function (e) {
+    var tarjeta = e.target.closest(".tarjeta-lead");
+    if (tarjeta) tarjeta.classList.remove("arrastrando");
+    document.querySelectorAll(".columna-embudo.sobre").forEach(function (c) { c.classList.remove("sobre"); });
+  });
+  tablero.addEventListener("dragover", function (e) {
+    var columna = e.target.closest(".columna-embudo");
+    if (!columna) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    columna.classList.add("sobre");
+  });
+  tablero.addEventListener("dragleave", function (e) {
+    var columna = e.target.closest(".columna-embudo");
+    if (columna && !columna.contains(e.relatedTarget)) columna.classList.remove("sobre");
+  });
+  tablero.addEventListener("drop", function (e) {
+    var columna = e.target.closest(".columna-embudo");
+    e.preventDefault();
+    if (!columna || !arrastrando) return;
+    columna.classList.remove("sobre");
+    var id = arrastrando.dataset.id;
+    var etapa = columna.dataset.etapa;
+    var destino = columna.querySelector(".soltar-aqui");
+    destino.appendChild(arrastrando);
+    fetch("/crm/" + id + "/mover/", {
+      method: "POST",
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "etapa=" + encodeURIComponent(etapa) + "&csrfmiddlewaretoken=" + encodeURIComponent(csrf),
+    }).then(function (r) { return r.json(); }).then(function (data) {
+      if (!data.ok) location.reload();
+      else fetch(location.href).then(function (r) { return r.text(); }).then(function (html) {
+        var nuevo = new DOMParser().parseFromString(html, "text/html").getElementById("embudo");
+        if (nuevo) tablero.innerHTML = nuevo.innerHTML;
+      });
+    }).catch(function () { location.reload(); });
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

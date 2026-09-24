@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Contabilidad{% endblock %}
+{% block encabezado %}Asientos contables{% endblock %}
+{% block acciones %}{% if request.user|puede:"contabilidad:balance" %}<a class="boton" href="{% url 'contabilidad:balance' %}">Saldos por cuenta</a>{% endif %}{% endblock %}
+{% block contenido %}
+<div class="tarjeta">
+  <div class="cab"><form class="filtros" method="get"><input type="month" name="periodo" value="{{ periodo }}"><button class="boton">Filtrar</button></form><span class="tenue" style="margin-left:auto">Los asientos nacen de los documentos; no se digitan aparte.</span></div>
+  {% if page_obj.object_list %}
+  <table class="datos"><thead><tr><th>Número</th><th>Fecha</th><th>Glosa</th><th>Origen</th><th class="num">Importe</th></tr></thead>
+  {% for a in page_obj %}<tr><td>{% if request.user|puede:"contabilidad:asiento" %}<a class="fila mono" href="{% url 'contabilidad:asiento' a.pk %}">{{ a.numero }}</a>{% endif %}</td><td>{{ a.fecha|date:"d M Y" }}</td><td>{{ a.glosa }}</td><td>{% if a.comprobante %}{% if request.user|puede:"facturacion:detalle" %}<a href="{% url 'facturacion:detalle' a.comprobante.pk %}">{{ a.comprobante.numero_completo }}</a>{% endif %}{% elif a.movimiento_tesoreria %}<small>Cobro</small>{% else %}<small>Manual</small>{% endif %}</td><td class="num">{{ a.debe|dinero:request.empresa.moneda_base }}</td></tr>{% endfor %}</table>
+  {% include "parciales/paginacion.html" %}
+  {% else %}<div class="vacio"><b>Sin asientos</b>Aparecerán al aceptarse el primer comprobante.</div>{% endif %}
+</div>
+{% endblock %}

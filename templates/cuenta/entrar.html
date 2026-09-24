@@ -1,0 +1,28 @@
+{% load static %}<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrar · ERP</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/erp.css' %}"></head>
+<body>
+<div class="acceso">
+  <section class="acceso-editorial" aria-label="ERP Workspace">
+    <div class="firma"><span class="isotipo" aria-hidden="true">e<span>·</span></span><span>ERP<span class="firma-sub">BUSINESS WORKSPACE</span></span></div>
+    <div><span class="eyebrow">EL SIGUIENTE CAPÍTULO DE TU EMPRESA</span><h2>Grandes ideas.<br><em>Una gestión<br>a su altura.</em></h2><p>Conecta tus ventas, operaciones y finanzas en un solo espacio de trabajo.</p></div>
+    <footer>COMERCIAL &nbsp; / &nbsp; OPERACIÓN &nbsp; / &nbsp; FINANZAS</footer>
+  </section>
+  <div class="acceso-formulario">
+  <form method="post" class="caja-cuenta">{% csrf_token %}
+    <span class="eyebrow">BIENVENIDO A TU WORKSPACE</span>
+    <h1>Todo empieza aquí.</h1>
+    <p class="tenue" style="margin-bottom:32px">Ingresa con tu usuario para continuar al ERP.</p>
+    {% if form.errors %}<div class="errores-generales">Usuario o contraseña incorrectos.</div>{% endif %}
+    <div class="campo"><label for="id_username">Usuario</label><input type="text" name="username" id="id_username" value="{{ form.username.value|default:'' }}" placeholder="Tu nombre de usuario" autofocus autocomplete="username" required></div>
+    <div class="campo"><label for="id_password">Contraseña</label><input type="password" name="password" id="id_password" autocomplete="current-password" required></div>
+    <input type="hidden" name="next" value="{{ next }}">
+    <button class="boton primario">Entrar al espacio de trabajo <span aria-hidden="true">↗</span></button>
+    <p class="acceso-nota"><a href="{% url 'cuenta:recuperar' %}">Olvidé mi contraseña</a></p>
+    <p class="acceso-nota">¿Necesitas acceso? Contacta al administrador de tu empresa.</p>
+  </form>
+  </div>
+</div>
+</body></html>

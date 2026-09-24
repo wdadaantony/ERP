@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Guías de remisión{% endblock %}
+{% block miga %}{% if request.user|puede:"inventario:stock" %}<a href="{% url 'inventario:stock' %}">Inventario</a>{% endif %} › Guías{% endblock %}
+{% block encabezado %}Guías de remisión{% endblock %}
+{% block contenido %}
+<div class="tarjeta">
+  {% if page_obj.object_list %}
+  <table class="datos"><thead><tr><th>Número</th><th>Pedido</th><th>Destinatario</th><th>Traslado</th><th>Llegada</th><th>Estado</th></tr></thead>
+  {% for g in page_obj %}<tr><td class="mono">{{ g.numero_completo }}</td><td>{% if g.pedido %}{% if request.user|puede:"ventas:detalle" %}<a class="fila" href="{% url 'ventas:detalle' g.pedido.pk %}">{{ g.pedido.numero }}</a>{% endif %}{% endif %}</td><td>{{ g.destinatario.razon_social }}</td><td>{{ g.fecha_traslado|date:"d M Y" }}</td><td><small>{{ g.punto_llegada|truncatechars:50 }}</small></td><td><span class="estado {{ g.estado }}">{{ g.get_estado_display }}</span></td></tr>{% endfor %}</table>
+  {% include "parciales/paginacion.html" %}
+  {% else %}<div class="vacio"><b>Sin guías</b>Se emiten desde la ficha de un pedido ya despachado.</div>{% endif %}
+</div>
+{% endblock %}

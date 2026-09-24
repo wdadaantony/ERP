@@ -1,0 +1,39 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Ventas{% endblock %}
+{% block encabezado %}Ventas{% endblock %}
+{% block acciones %}{% if request.user|puede:"ventas:nuevo" %}<a class="boton primario" href="{% url 'ventas:nuevo' %}">Nueva cotización</a>{% endif %}{% endblock %}
+{% block contenido %}
+<div class="tarjeta">
+  <div class="cab">
+    <form class="filtros" method="get">
+      <input type="search" name="q" value="{{ q }}" placeholder="Número, cliente o documento">
+      <input type="hidden" name="estado" value="{{ estado }}">
+      <button class="boton">Buscar</button>
+    </form>
+    <div class="pastillas" style="margin-left:auto">
+      <a class="pastilla {% if not estado %}activa{% endif %}" href="?q={{ q }}">Todos</a>
+      <a class="pastilla {% if estado == 'abiertos' %}activa{% endif %}" href="?estado=abiertos&q={{ q }}">Abiertos</a>
+      {% for valor, nombre in estados %}{% if valor in 'borrador,en_espera,reservado,entregado,facturado' %}<a class="pastilla {% if estado == valor %}activa{% endif %}" href="?estado={{ valor }}&q={{ q }}">{{ nombre }}</a>{% endif %}{% endfor %}
+    </div>
+  </div>
+  {% if page_obj.object_list %}
+  <div class="envuelve"><table class="datos">
+    <thead><tr><th>Número</th><th>Cliente</th><th>Fecha</th><th>Vendedor</th><th>Origen</th><th>Estado</th><th class="num">Total</th></tr></thead>
+    <tbody>
+    {% for p in page_obj %}
+    <tr>
+      <td>{% if request.user|puede:"ventas:detalle" %}<a class="fila" href="{% url 'ventas:detalle' p.pk %}">{{ p.numero }}</a>{% endif %}</td>
+      <td>{{ p.tercero.razon_social }}<br><small class="mono">{{ p.tercero.numero_documento }}</small></td>
+      <td>{{ p.fecha|date:"d M Y" }}</td>
+      <td>{{ p.vendedor|default:"—" }}</td>
+      <td><small>{{ p.origen|default:"—" }}</small></td>
+      <td><span class="estado {{ p.estado }}">{{ p.get_estado_display }}</span></td>
+      <td class="num">{{ p.total|dinero:p.moneda }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% include "parciales/paginacion.html" %}
+  {% else %}<div class="vacio"><b>No hay pedidos con ese filtro</b>Prueba con otro estado o crea una cotización.</div>{% endif %}
+</div>
+{% endblock %}

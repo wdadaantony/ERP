@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}{% if lead %}Editar lead{% else %}Nuevo lead{% endif %}{% endblock %}
+{% block miga %}{% if request.user|puede:"crm:embudo" %}<a href="{% url 'crm:embudo' %}">CRM</a>{% endif %} › {% if lead %}{{ lead.nombre }}{% else %}Nuevo{% endif %}{% endblock %}
+{% block encabezado %}{% if lead %}Editar {{ lead.nombre }}{% else %}Nuevo lead{% endif %}{% endblock %}
+{% block contenido %}
+<form method="post" class="formulario"><div class="rejilla lados">{% csrf_token %}
+  <div class="tarjeta"><div class="cuerpo"><div class="fila">{% include "parciales/formulario.html" %}</div></div></div>
+  <div><div class="tarjeta"><div class="cuerpo">
+    <p class="tenue">El origen y la campaña viajan con el lead hasta el pedido y la venta: es lo que permite devolver la conversión real a la plataforma de anuncios.</p>
+    <p class="tenue">Antes de crear el cliente se busca por documento y correo, para no duplicar a quien llega por dos canales.</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">{% if request.user|puede:"crm:embudo" %}<a class="boton" href="{% url 'crm:embudo' %}">Cancelar</a>{% endif %}<button class="boton primario">Guardar</button></div>
+  </div></div></div>
+</div></form>
+{% endblock %}

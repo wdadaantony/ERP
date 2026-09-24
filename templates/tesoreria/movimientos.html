@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Cobros y pagos{% endblock %}
+{% block miga %}{% if request.user|puede:"tesoreria:cobranza" %}<a href="{% url 'tesoreria:cobranza' %}">Cobranza</a>{% endif %} › Movimientos{% endblock %}
+{% block encabezado %}Cobros y pagos{% endblock %}
+{% block contenido %}
+<div class="tarjeta">
+  <div class="cab"><div class="pastillas"><a class="pastilla {% if not sentido %}activa{% endif %}" href="?">Todos</a><a class="pastilla {% if sentido == 'cobro' %}activa{% endif %}" href="?sentido=cobro">Cobros</a><a class="pastilla {% if sentido == 'pago' %}activa{% endif %}" href="?sentido=pago">Pagos</a></div></div>
+  {% if page_obj.object_list %}
+  <table class="datos"><thead><tr><th>Fecha</th><th>Sentido</th><th>Tercero</th><th>Comprobante</th><th>Método</th><th>Referencia</th><th>Estado</th><th class="num">Monto</th></tr></thead>
+  {% for m in page_obj %}<tr><td>{{ m.fecha|date:"d M Y" }}</td><td><small>{{ m.get_sentido_display }}</small></td><td>{{ m.tercero.razon_social }}</td><td>{% if m.comprobante %}{% if request.user|puede:"facturacion:detalle" %}<a class="mono" href="{% url 'facturacion:detalle' m.comprobante.pk %}">{{ m.comprobante.numero_completo }}</a>{% endif %}{% else %}—{% endif %}</td><td>{{ m.get_metodo_display }}</td><td class="mono"><small>{{ m.referencia_externa|default:"—" }}</small></td><td><span class="estado {{ m.estado }}">{{ m.get_estado_display }}</span></td><td class="num">{{ m.monto|dinero:m.moneda }}</td></tr>{% endfor %}</table>
+  {% include "parciales/paginacion.html" %}
+  {% else %}<div class="vacio">Sin movimientos.</div>{% endif %}
+</div>
+{% endblock %}

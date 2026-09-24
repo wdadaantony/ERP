@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}{% if tercero %}Editar{% else %}Nuevo tercero{% endif %}{% endblock %}
+{% block miga %}{% if request.user|puede:"terceros:lista" %}<a href="{% url 'terceros:lista' %}">Clientes y proveedores</a>{% endif %} › {% if tercero %}{{ tercero.razon_social }}{% else %}Nuevo{% endif %}{% endblock %}
+{% block encabezado %}{% if tercero %}Editar {{ tercero.razon_social }}{% else %}Nuevo cliente o proveedor{% endif %}{% endblock %}
+{% block contenido %}
+<form method="post" class="formulario">{% csrf_token %}
+<div class="rejilla lados">
+  <div style="display:grid;gap:16px">
+    <div class="tarjeta"><div class="cab"><h2>Datos</h2></div><div class="cuerpo"><div class="fila">{% include "parciales/formulario.html" %}</div></div></div>
+    <div class="tarjeta"><div class="cab"><h2>Contactos</h2></div>
+      {{ contactos.management_form }}
+      <table class="datos lineas"><thead><tr><th>Nombre</th><th>Cargo</th><th>Correo</th><th>Teléfono</th><th class="quitar"></th></tr></thead>
+      {% for f in contactos %}<tr>{{ f.id }}<td>{{ f.nombre }}</td><td>{{ f.cargo }}</td><td>{{ f.email }}</td><td>{{ f.telefono }}</td><td class="quitar">{% if f.instance.pk %}<label>{{ f.DELETE }} ×</label>{% endif %}</td></tr>{% endfor %}</table>
+    </div>
+    <div class="tarjeta"><div class="cab"><h2>Direcciones de entrega</h2></div>
+      {{ direcciones.management_form }}
+      <table class="datos lineas"><thead><tr><th>Etiqueta</th><th>Dirección</th><th>Ubigeo</th><th>Referencia</th><th>Principal</th><th class="quitar"></th></tr></thead>
+      {% for f in direcciones %}<tr>{{ f.id }}<td>{{ f.etiqueta }}</td><td>{{ f.direccion }}</td><td>{{ f.ubigeo }}</td><td>{{ f.referencia }}</td><td style="text-align:center">{{ f.es_principal }}</td><td class="quitar">{% if f.instance.pk %}<label>{{ f.DELETE }} ×</label>{% endif %}</td></tr>{% endfor %}</table>
+    </div>
+  </div>
+  <div>
+    <div class="tarjeta"><div class="cuerpo">
+      <p class="tenue">Un solo registro sirve para CRM, ventas, compras y contabilidad. Si es cliente y proveedor a la vez, marca ambas casillas.</p>
+      <p class="tenue">Con RUC se emiten facturas; con DNI, boletas.</p>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><a class="boton" href="{% if tercero %}{% url 'terceros:detalle' tercero.pk %}{% else %}{% url 'terceros:lista' %}{% endif %}">Cancelar</a><button class="boton primario">Guardar</button></div>
+    </div></div>
+  </div>
+</div>
+</form>
+{% endblock %}

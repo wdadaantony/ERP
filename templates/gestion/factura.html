@@ -1,0 +1,8 @@
+{% extends 'base.html' %}{% load erp %}
+{% block titulo %}{{ f.numero }}{% endblock %}
+{% block encabezado %}Factura de proveedor · {{ f.numero }}{% endblock %}
+{% block acciones %}<a class="boton" href="{% url 'gestion:proveedores' %}">Cuentas por pagar</a>
+{% if f.estado == 'borrador' and request.user|puede:'gestion:aprobar' %}<form method="post" action="{% url 'gestion:aprobar' f.pk %}">{% csrf_token %}<button class="boton primario">Aprobar y contabilizar</button></form>{% endif %}
+{% if f.estado == 'aprobada' and f.saldo > 0 and request.user|puede:'gestion:pagar' %}<a class="boton primario" href="{% url 'gestion:pagar' f.pk %}">Registrar pago</a>{% endif %}{% endblock %}
+{% block contenido %}<div class="rejilla c2"><div class="tarjeta"><div class="cab"><h2>Documento</h2></div><div class="cuerpo"><dl class="ficha"><dt>Proveedor</dt><dd>{{ f.proveedor }}</dd><dt>Concepto</dt><dd>{{ f.concepto }}</dd><dt>Cuenta destino</dt><dd>{{ f.cuenta_destino }}</dd><dt>Emisión</dt><dd>{{ f.fecha }}</dd><dt>Vencimiento</dt><dd>{{ f.vencimiento }}</dd><dt>Total</dt><dd>{{ f.total|dinero:f.moneda }}</dd><dt>Pendiente</dt><dd>{{ f.saldo|dinero:f.moneda }}</dd><dt>Estado</dt><dd>{{ f.get_estado_display }}</dd><dt>Aprobado por</dt><dd>{{ f.aprobada_por|default:'Pendiente' }}</dd></dl></div></div>
+<div class="tarjeta"><div class="cab"><h2>Pagos registrados</h2></div><table class="datos"><thead><tr><th>Fecha</th><th>Referencia</th><th>Importe</th></tr></thead><tbody>{% for p in pagos %}<tr><td>{{ p.movimiento.fecha }}</td><td>{{ p.movimiento.referencia_externa }}</td><td>{{ p.movimiento.monto|dinero:f.moneda }}</td></tr>{% empty %}<tr><td colspan="3" class="vacio">Sin pagos registrados.</td></tr>{% endfor %}</tbody></table></div></div>{% endblock %}

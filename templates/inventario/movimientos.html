@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Movimientos{% endblock %}
+{% block miga %}{% if request.user|puede:"inventario:stock" %}<a href="{% url 'inventario:stock' %}">Inventario</a>{% endif %} › Movimientos{% endblock %}
+{% block encabezado %}{% if producto %}Kardex de {{ producto.nombre }}{% else %}Movimientos de stock{% endif %}{% endblock %}
+{% block contenido %}
+<div class="tarjeta">
+  <div class="cab"><form class="filtros" method="get"><input type="search" name="q" value="{{ q }}" placeholder="Producto o documento"><button class="boton">Buscar</button></form>
+  <span class="tenue" style="margin-left:auto">El stock es la suma de estas filas; no se editan a mano.</span></div>
+  {% if page_obj.object_list %}
+  <div class="envuelve"><table class="datos">
+    <thead><tr><th>Fecha</th><th>Producto</th><th>Movimiento</th><th class="num">Cantidad</th><th class="num">Costo unit.</th><th>Documento</th><th>Usuario</th></tr></thead>
+    <tbody>{% for m in page_obj %}
+    <tr>
+      <td>{{ m.fecha|date:"d M Y H:i" }}</td>
+      <td><b>{{ m.producto.nombre }}</b><br><small class="mono">{{ m.producto.codigo }}</small></td>
+      <td><small>{{ m.origen.nombre }} → {{ m.destino.nombre }}</small></td>
+      <td class="num">{% if m.destino.tipo == T.INTERNA and m.origen.tipo != T.INTERNA %}<span class="estado cerrado">+{{ m.cantidad|cantidad }}</span>{% elif m.origen.tipo == T.INTERNA and m.destino.tipo != T.INTERNA %}<span class="estado cancelado">−{{ m.cantidad|cantidad }}</span>{% else %}{{ m.cantidad|cantidad }}{% endif %}</td>
+      <td class="num">{{ m.costo_unitario|floatformat:2 }}</td>
+      <td class="mono">{{ m.documento_origen }}</td>
+      <td>{{ m.usuario|default:"sistema" }}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% include "parciales/paginacion.html" %}
+  {% else %}<div class="vacio">Sin movimientos.</div>{% endif %}
+</div>
+{% endblock %}

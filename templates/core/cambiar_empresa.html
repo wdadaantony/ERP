@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block titulo %}Cambiar empresa{% endblock %}
+{% block encabezado %}Cambiar empresa{% endblock %}
+{% block contenido %}
+<div class="tarjeta" style="max-width:520px">
+  <div class="cuerpo">
+    <form method="post">{% csrf_token %}
+      {% for e in empresas %}
+      <label style="display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--linea);border-radius:4px;margin-bottom:8px;cursor:pointer">
+        <input type="radio" name="empresa" value="{{ e.pk }}" {% if e == request.empresa %}checked{% endif %}>
+        <span><b>{{ e.razon_social }}</b><br><small>RUC {{ e.ruc }}</small></span>
+      </label>
+      {% endfor %}
+      <button class="boton primario">Cambiar</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

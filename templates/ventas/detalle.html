@@ -1,0 +1,132 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}{{ pedido.numero }}{% endblock %}
+{% block miga %}{% if request.user|puede:"ventas:lista" %}<a href="{% url 'ventas:lista' %}">Ventas</a>{% endif %} › {{ pedido.numero }}{% endblock %}
+{% block encabezado %}{{ pedido.numero }} <span class="estado {{ pedido.estado }}" style="vertical-align:middle;margin-left:6px">{{ pedido.get_estado_display }}</span>{% endblock %}
+{% block acciones %}
+<a class="boton" href="{% url 'gestion:cotizacion' pedido.pk %}">Imprimir cotización</a>
+{% if pedido.estado == 'reservado' and request.user|puede:'gestion:despacho' %}<a class="boton" href="{% url 'gestion:despacho' pedido.pk %}">Entrega parcial</a>{% endif %}
+  {% if editable %}
+    {% if request.user|puede:"ventas:editar" %}<a class="boton" href="{% url 'ventas:editar' pedido.pk %}">Editar</a>{% endif %}
+    {% if pedido.estado == E.BORRADOR %}{% if request.user|puede:"ventas:enviar" %}<form class="inline" method="post" action="{% url 'ventas:enviar' pedido.pk %}">{% csrf_token %}<button class="boton">Marcar enviada</button></form>{% endif %}{% endif %}
+    {% if request.user|puede:"ventas:confirmar" %}<form class="inline" method="post" action="{% url 'ventas:confirmar' pedido.pk %}">{% csrf_token %}<button class="boton primario">Confirmar pedido</button></form>{% endif %}
+  {% elif pedido.estado == E.EN_ESPERA %}
+    {% if request.user|puede:"ventas:reintentar" %}<form class="inline" method="post" action="{% url 'ventas:reintentar' pedido.pk %}">{% csrf_token %}<button class="boton">Reintentar reserva</button></form>{% endif %}
+  {% elif pedido.estado == E.RESERVADO %}
+    {% if request.user|puede:"ventas:despachar" %}<form class="inline" method="post" action="{% url 'ventas:despachar' pedido.pk %}">{% csrf_token %}<button class="boton primario">Despachar</button></form>{% endif %}
+  {% elif pedido.estado == E.ENTREGADO %}
+    {% if request.user|puede:"ventas:facturar" %}<form class="inline" method="post" action="{% url 'ventas:facturar' pedido.pk %}">{% csrf_token %}<button class="boton primario">Emitir comprobante</button></form>{% endif %}
+  {% elif comprobante %}
+    {% if request.user|puede:"facturacion:detalle" %}<a class="boton" href="{% url 'facturacion:detalle' comprobante.pk %}">Ver {{ comprobante.numero_completo }}</a>{% endif %}
+  {% endif %}
+{% endblock %}
+{% block contenido %}
+
+<div class="tarjeta" style="margin-bottom:16px">
+  <div class="pasos {% if desvio %}desvio{% endif %}">
+    {% for paso in pasos %}<div class="paso {% if paso.hecho %}hecho{% elif paso.actual %}actual{% endif %}"><span class="punto">{% if paso.hecho %}✓{% else %}{{ forloop.counter }}{% endif %}</span>{{ paso.nombre }}</div>{% endfor %}
+    {% if pedido.estado == E.EN_ESPERA %}<div class="paso actual" style="margin-left:auto"><span class="punto">!</span>En espera de stock</div>{% endif %}
+    {% if pedido.estado == E.CANCELADO %}<div class="paso actual" style="margin-left:auto"><span class="punto">×</span>Cancelado</div>{% endif %}
+  </div>
+</div>
+
+{% if pedido.estado == E.EN_ESPERA %}
+<div class="bloque-alerta" style="margin-bottom:16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+  <div style="flex:1"><b>Falta stock.</b> El pedido no se sirve hasta que llegue la mercadería. Puedes generar la orden de compra del faltante o esperar y reintentar.</div>
+  {% if request.user|puede:"ventas:comprar_faltante" %}<form method="post" action="{% url 'ventas:comprar_faltante' pedido.pk %}" style="display:flex;gap:8px;align-items:center">{% csrf_token %}{{ form_oc.proveedor }}<button class="boton">Comprar faltante</button></form>{% endif %}
+</div>
+{% endif %}
+
+<div class="rejilla lados">
+  <div style="display:grid;gap:16px">
+    <div class="tarjeta">
+      <div class="cab"><h2>Líneas</h2></div>
+      <div class="envuelve"><table class="datos">
+        <thead><tr><th>Producto</th><th class="num">Cant.</th><th class="num">Disponible</th><th class="num">P. unit.</th><th class="num">Dto.</th><th class="num">Subtotal</th>{% if pedido.estado != E.BORRADOR %}<th class="num">Entregado</th>{% endif %}</tr></thead>
+        <tbody>
+        {% for l in lineas %}
+        <tr>
+          <td><b>{{ l.producto.nombre }}</b><br><small class="mono">{{ l.producto.codigo }}</small>{% if l.descripcion and l.descripcion != l.producto.nombre %}<br><small>{{ l.descripcion }}</small>{% endif %}</td>
+          <td class="num">{{ l.cantidad|cantidad }} {{ l.producto.unidad_medida.codigo }}</td>
+          <td class="num">{% if l.disponible is None %}<small>servicio</small>{% elif l.disponible < l.cantidad and editable %}<span class="estado en_espera">{{ l.disponible|cantidad }}</span>{% else %}{{ l.disponible|cantidad }}{% endif %}</td>
+          <td class="num">{{ l.precio_unitario|floatformat:2 }}</td>
+          <td class="num">{% if l.descuento_pct %}{{ l.descuento_pct|cantidad }}%{% else %}—{% endif %}</td>
+          <td class="num">{{ l.subtotal|floatformat:2 }}</td>
+          {% if pedido.estado != E.BORRADOR %}<td class="num">{{ l.cantidad_entregada|cantidad }}</td>{% endif %}
+        </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr><td colspan="5" class="num">Subtotal</td><td class="num">{{ pedido.subtotal|floatformat:2 }}</td>{% if pedido.estado != E.BORRADOR %}<td></td>{% endif %}</tr>
+          <tr><td colspan="5" class="num">IGV</td><td class="num">{{ pedido.impuestos|floatformat:2 }}</td>{% if pedido.estado != E.BORRADOR %}<td></td>{% endif %}</tr>
+          <tr><td colspan="5" class="num">Total</td><td class="num">{{ pedido.total|dinero:pedido.moneda }}</td>{% if pedido.estado != E.BORRADOR %}<td></td>{% endif %}</tr>
+        </tfoot>
+      </table></div>
+    </div>
+
+    {% if pedido.estado == E.ENTREGADO or pedido.estado == E.FACTURADO or pedido.estado == E.PAGADO or pedido.estado == E.CERRADO %}
+    <div class="tarjeta">
+      <div class="cab"><h2>Guía de remisión</h2>{% if guia %}<span class="estado {{ guia.estado }}">{{ guia.get_estado_display }}</span>{% endif %}</div>
+      <div class="cuerpo">
+        {% if guia %}
+          <dl class="ficha"><dt>Número</dt><dd class="mono">{{ guia.numero_completo }}</dd><dt>Traslado</dt><dd>{{ guia.fecha_traslado|date:"d M Y" }}</dd><dt>Llegada</dt><dd>{{ guia.punto_llegada }}</dd>{% if guia.transportista %}<dt>Transportista</dt><dd>{{ guia.transportista }} {{ guia.placa }}</dd>{% endif %}</dl>
+          {% if guia.mensaje_respuesta %}<p class="tenue" style="margin-top:8px">{{ guia.mensaje_respuesta }}</p>{% endif %}
+        {% else %}
+          {% if request.user|puede:"ventas:guia" %}<form method="post" action="{% url 'ventas:guia' pedido.pk %}" class="formulario">{% csrf_token %}
+            <div class="fila">{% include "parciales/formulario.html" with form=form_guia %}</div>
+            <button class="boton">Emitir guía</button>
+          </form>{% endif %}
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div style="display:grid;gap:16px">
+    <div class="tarjeta">
+      <div class="cab"><h2>Cliente</h2>{% if request.user|puede:"terceros:detalle" %}<a href="{% url 'terceros:detalle' pedido.tercero.pk %}">Ver ficha</a>{% endif %}</div>
+      <div class="cuerpo">
+        <dl class="ficha">
+          <dt>Razón social</dt><dd>{{ pedido.tercero.razon_social }}</dd>
+          <dt>Documento</dt><dd class="mono">{{ pedido.tercero.get_tipo_documento_display }} {{ pedido.tercero.numero_documento }}</dd>
+          {% if pedido.tercero.email %}<dt>Correo</dt><dd>{{ pedido.tercero.email }}</dd>{% endif %}
+          {% if pedido.tercero.telefono %}<dt>Teléfono</dt><dd>{{ pedido.tercero.telefono }}</dd>{% endif %}
+          <dt>Condición</dt><dd>{{ pedido.tercero.condicion_pago|default:"Contado" }}</dd>
+        </dl>
+      </div>
+    </div>
+    <div class="tarjeta">
+      <div class="cab"><h2>Pedido</h2></div>
+      <div class="cuerpo">
+        <dl class="ficha">
+          <dt>Fecha</dt><dd>{{ pedido.fecha|date:"d M Y" }}</dd>
+          {% if pedido.valido_hasta %}<dt>Válido hasta</dt><dd>{{ pedido.valido_hasta|date:"d M Y" }}</dd>{% endif %}
+          <dt>Vendedor</dt><dd>{{ pedido.vendedor|default:"—" }}</dd>
+          <dt>Almacén</dt><dd>{{ pedido.almacen }}</dd>
+          <dt>Moneda</dt><dd>{{ pedido.moneda }}{% if pedido.tipo_cambio != 1 %} · TC {{ pedido.tipo_cambio }}{% endif %}</dd>
+          {% if pedido.origen %}<dt>Origen</dt><dd>{{ pedido.origen }}{% if pedido.campania %} · {{ pedido.campania }}{% endif %}</dd>{% endif %}
+          {% if pedido.direccion_entrega %}<dt>Entrega</dt><dd>{{ pedido.direccion_entrega.direccion }}</dd>{% endif %}
+        </dl>
+        {% if pedido.notas %}<p class="tenue" style="margin-top:10px;white-space:pre-line">{{ pedido.notas }}</p>{% endif %}
+      </div>
+    </div>
+    {% if comprobante or ordenes %}
+    <div class="tarjeta">
+      <div class="cab"><h2>Documentos</h2></div>
+      <table class="datos">
+        {% if comprobante %}<tr><td>{{ comprobante.get_tipo_display }}</td><td>{% if request.user|puede:"facturacion:detalle" %}<a class="fila" href="{% url 'facturacion:detalle' comprobante.pk %}">{{ comprobante.numero_completo }}</a>{% endif %}</td><td><span class="estado {{ comprobante.estado }}">{{ comprobante.get_estado_display }}</span></td></tr>{% endif %}
+        {% for o in ordenes %}<tr><td>Orden de compra</td><td>{% if request.user|puede:"compras:detalle" %}<a class="fila" href="{% url 'compras:detalle' o.pk %}">{{ o.numero }}</a>{% endif %}</td><td><span class="estado {{ o.estado }}">{{ o.get_estado_display }}</span></td></tr>{% endfor %}
+      </table>
+    </div>
+    {% endif %}
+    {% if pedido.estado != E.CERRADO and pedido.estado != E.CANCELADO and pedido.estado != E.FACTURADO and pedido.estado != E.PAGADO and pedido.estado != E.ENTREGADO %}
+    <details class="tarjeta">
+      <summary style="padding:12px 16px;cursor:pointer;color:var(--alerta);font-weight:500">Cancelar pedido</summary>
+      {% if request.user|puede:"ventas:cancelar" %}<form method="post" action="{% url 'ventas:cancelar' pedido.pk %}" class="cuerpo" style="padding-top:0">{% csrf_token %}
+        {% include "parciales/formulario.html" with form=form_cancelar %}
+        <button class="boton peligro">Cancelar y liberar stock</button>
+      </form>{% endif %}
+    </details>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

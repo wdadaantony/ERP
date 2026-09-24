@@ -1,0 +1,23 @@
+/* La administración conserva sus controles nativos y comparte la identidad del ERP. */
+html[data-theme="light"], :root {
+  --primary: #28574b; --secondary: #173d35; --accent: #d9eb99;
+  --primary-fg: #fff; --body-fg: #243b33; --body-bg: #f5f5f0;
+  --body-quiet-color: #65756d; --body-loud-color: #173d35;
+  --header-color: #d9eb99; --header-branding-color: #d9eb99;
+  --header-bg: #173d35; --link-fg: #286953; --link-hover-color: #173d35;
+  --breadcrumbs-bg: #28574b; --hairline-color: #e3e6df; --border-color: #d2dacf;
+  --darkened-bg: #edf0e7; --selected-bg: #e9efdc; --selected-row: #f0f4e7;
+  --button-bg: #28574b; --button-hover-bg: #173d35;
+  --default-button-bg: #173d35; --default-button-hover-bg: #28574b;
+  --font-family-primary: 'Segoe UI', system-ui, sans-serif;
+}
+html[data-theme="dark"] { --primary: #426a57; --secondary: #173d35; --accent: #d9eb99; --header-bg: #173d35; --header-branding-color: #d9eb99; --link-fg: #bad293; --link-hover-color: #d9eb99; }
+#header { padding-block: 23px; }
+#site-name a { font-weight: 600; letter-spacing: -.035em; }
+.admin-workspace { font-size: 15px; font-weight: 400; letter-spacing: 0; }
+.module { border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; }
+.module h2, .module caption { padding: 13px 16px; }
+td, th { padding: 13px 12px; }
+input, textarea, select, .button, input[type=submit], .submit-row input { border-radius: 7px; }
+#content h1 { letter-spacing: -.04em; font-weight: 500; }
+.submit-row { border-radius: 10px; padding: 18px; }

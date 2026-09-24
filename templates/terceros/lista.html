@@ -1,0 +1,31 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Clientes y proveedores{% endblock %}
+{% block encabezado %}Clientes y proveedores{% endblock %}
+{% block acciones %}{% if request.user|puede:"terceros:nuevo" %}<a class="boton primario" href="{% url 'terceros:nuevo' %}">Nuevo</a>{% endif %}{% endblock %}
+{% block contenido %}
+<div class="tarjeta">
+  <div class="cab">
+    <form class="filtros" method="get"><input type="search" name="q" value="{{ q }}" placeholder="Razón social, documento o correo"><input type="hidden" name="tipo" value="{{ tipo }}"><button class="boton">Buscar</button></form>
+    <div class="pastillas" style="margin-left:auto">
+      <a class="pastilla {% if not tipo %}activa{% endif %}" href="?q={{ q }}">Todos</a>
+      <a class="pastilla {% if tipo == 'clientes' %}activa{% endif %}" href="?tipo=clientes&q={{ q }}">Clientes</a>
+      <a class="pastilla {% if tipo == 'proveedores' %}activa{% endif %}" href="?tipo=proveedores&q={{ q }}">Proveedores</a>
+    </div>
+  </div>
+  {% if page_obj.object_list %}
+  <div class="envuelve"><table class="datos">
+    <thead><tr><th>Documento</th><th>Razón social</th><th>Tipo</th><th>Contacto</th><th>Condición</th><th>Vendedor</th></tr></thead>
+    <tbody>{% for t in page_obj %}
+    <tr>
+      <td class="mono">{{ t.numero_documento }}</td>
+      <td>{% if request.user|puede:"terceros:detalle" %}<a class="fila" href="{% url 'terceros:detalle' t.pk %}">{{ t.razon_social }}</a>{% endif %}{% if t.nombre_comercial %}<br><small>{{ t.nombre_comercial }}</small>{% endif %}</td>
+      <td><small>{% if t.es_cliente %}Cliente{% endif %}{% if t.es_cliente and t.es_proveedor %} · {% endif %}{% if t.es_proveedor %}Proveedor{% endif %}</small></td>
+      <td><small>{{ t.email }}{% if t.email and t.telefono %}<br>{% endif %}{{ t.telefono }}</small></td>
+      <td>{{ t.condicion_pago|default:"—" }}</td>
+      <td>{{ t.vendedor_asignado|default:"—" }}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% include "parciales/paginacion.html" %}
+  {% else %}<div class="vacio"><b>Sin resultados</b>Prueba otra búsqueda o crea un tercero nuevo.</div>{% endif %}
+</div>
+{% endblock %}

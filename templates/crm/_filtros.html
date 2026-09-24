@@ -1,0 +1,44 @@
+{% load erp %}
+<div class="tarjeta" style="margin-bottom:16px">
+  <div class="cuerpo" style="display:grid;gap:10px">
+    <form method="get" class="filtros">
+      <input type="search" name="q" value="{{ f_q }}" placeholder="Nombre, empresa, correo, teléfono">
+      {% if estado %}<input type="hidden" name="estado" value="{{ estado }}">{% endif %}
+      <select name="vendedor">
+        <option value="">Vendedor: todos</option>
+        {% for v in vendedores %}<option value="{{ v.pk }}" {% if f_vendedor == v.pk|stringformat:"s" %}selected{% endif %}>{{ v }}</option>{% endfor %}
+      </select>
+      <select name="prioridad">
+        <option value="">Prioridad: todas</option>
+        {% for val, etiqueta in prioridades %}<option value="{{ val }}" {% if f_prioridad == val|stringformat:"s" %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+      </select>
+      <input type="text" name="ciudad" value="{{ f_ciudad }}" placeholder="Ciudad" style="width:110px">
+      <input type="text" name="equipo" value="{{ f_equipo }}" placeholder="Equipo" style="width:110px">
+      <input type="text" name="etiqueta" value="{{ f_etiqueta }}" placeholder="Etiqueta" style="width:110px">
+      <input type="text" name="origen" value="{{ f_origen }}" placeholder="Origen" style="width:100px">
+      <input type="date" name="desde" value="{{ f_desde }}" title="Creado desde" style="width:135px">
+      <input type="date" name="hasta" value="{{ f_hasta }}" title="Creado hasta" style="width:135px">
+      <button class="boton primario">Filtrar</button>
+      {% if querystring_actual %}<a class="boton chico" href="{% url url_vista %}">Limpiar</a>{% endif %}
+    </form>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      {% if filtros_guardados %}
+      <span class="tenue">Mis filtros:</span>
+      {% for f in filtros_guardados %}
+      <span class="pastilla" style="display:inline-flex;align-items:center;gap:4px;padding:2px 4px 2px 10px">
+        <a href="{% url url_vista %}?{{ f.querystring }}">{{ f.nombre }}</a>
+        <form method="post" action="{% url 'crm:eliminar_filtro' f.pk %}" class="inline" onsubmit="return confirm('¿Borrar el filtro «{{ f.nombre }}»?')">{% csrf_token %}<button class="boton chico" style="padding:0 6px;border:none;background:none;color:inherit;opacity:0.6" title="Borrar filtro">×</button></form>
+      </span>
+      {% endfor %}
+      {% endif %}
+      {% if querystring_actual %}
+      <form method="post" action="{% url 'crm:guardar_filtro' %}" class="inline" style="display:flex;gap:6px;margin-left:auto">{% csrf_token %}
+        <input type="hidden" name="vista" value="{{ vista }}">
+        <input type="hidden" name="querystring" value="{{ querystring_actual }}">
+        <input type="text" name="nombre" placeholder="Nombre para este filtro" required style="width:180px">
+        <button class="boton chico">Guardar filtro</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</div>

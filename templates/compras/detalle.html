@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}{{ orden.numero }}{% endblock %}
+{% block miga %}{% if request.user|puede:"compras:lista" %}<a href="{% url 'compras:lista' %}">Compras</a>{% endif %} › {{ orden.numero }}{% endblock %}
+{% block encabezado %}{{ orden.numero }} <span class="estado {{ orden.estado }}" style="vertical-align:middle;margin-left:6px">{{ orden.get_estado_display }}</span>{% endblock %}
+{% block acciones %}
+  {% if orden.estado == E.BORRADOR or orden.estado == E.POR_APROBAR %}{% if request.user|puede:"compras:editar" %}<a class="boton" href="{% url 'compras:editar' orden.pk %}">Editar</a>{% endif %}{% if request.user|puede:"compras:aprobar" %}<form class="inline" method="post" action="{% url 'compras:aprobar' orden.pk %}">{% csrf_token %}<button class="boton primario">Aprobar</button></form>{% endif %}
+  {% elif orden.estado == E.APROBADA %}{% if request.user|puede:"compras:enviar" %}<form class="inline" method="post" action="{% url 'compras:enviar' orden.pk %}">{% csrf_token %}<button class="boton">Marcar enviada</button></form>{% endif %}{% if request.user|puede:"compras:recibir" %}<a class="boton primario" href="{% url 'compras:recibir' orden.pk %}">Recibir mercadería</a>{% endif %}
+  {% elif orden.estado == E.ENVIADA or orden.estado == E.RECIBIDA_PARCIAL %}{% if request.user|puede:"compras:recibir" %}<a class="boton primario" href="{% url 'compras:recibir' orden.pk %}">Recibir mercadería</a>{% endif %}{% endif %}
+{% endblock %}
+{% block contenido %}
+<div class="rejilla lados">
+  <div style="display:grid;gap:16px">
+    <div class="tarjeta"><div class="cab"><h2>Líneas</h2></div>
+      <table class="datos"><thead><tr><th>Producto</th><th class="num">Pedido</th><th class="num">Recibido</th><th class="num">Pendiente</th><th class="num">P. unit.</th><th class="num">Subtotal</th></tr></thead>
+      {% for l in lineas %}<tr><td><b>{{ l.producto.nombre }}</b><br><small class="mono">{{ l.producto.codigo }}</small></td><td class="num">{{ l.cantidad|cantidad }} {{ l.producto.unidad_medida.codigo }}</td><td class="num">{{ l.cantidad_recibida|cantidad }}</td><td class="num">{% if l.pendiente_recepcion > 0 %}<b>{{ l.pendiente_recepcion|cantidad }}</b>{% else %}—{% endif %}</td><td class="num">{{ l.precio_unitario|floatformat:2 }}</td><td class="num">{{ l.subtotal|floatformat:2 }}</td></tr>{% endfor %}
+      <tfoot><tr><td colspan="5" class="num">Subtotal</td><td class="num">{{ orden.subtotal|floatformat:2 }}</td></tr><tr><td colspan="5" class="num">IGV</td><td class="num">{{ orden.impuestos|floatformat:2 }}</td></tr><tr><td colspan="5" class="num">Total</td><td class="num">{{ orden.total|dinero:orden.moneda }}</td></tr></tfoot></table>
+    </div>
+    {% if recepciones %}<div class="tarjeta"><div class="cab"><h2>Recepciones</h2></div><table class="datos">{% for r in recepciones %}<tr><td class="mono">{{ r.numero }}</td><td>{{ r.fecha|date:"d M Y" }}</td><td>{{ r.almacen }}</td><td><small>Guía prov. {{ r.guia_proveedor|default:"—" }}</small></td><td>{{ r.recibido_por|default:"—" }}</td></tr>{% endfor %}</table></div>{% endif %}
+  </div>
+  <div style="display:grid;gap:16px">
+    <div class="tarjeta"><div class="cab"><h2>Proveedor</h2>{% if request.user|puede:"terceros:detalle" %}<a href="{% url 'terceros:detalle' orden.proveedor.pk %}">Ver ficha</a>{% endif %}</div><div class="cuerpo"><dl class="ficha"><dt>Razón social</dt><dd>{{ orden.proveedor.razon_social }}</dd><dt>RUC</dt><dd class="mono">{{ orden.proveedor.numero_documento }}</dd>{% if orden.proveedor.telefono %}<dt>Teléfono</dt><dd>{{ orden.proveedor.telefono }}</dd>{% endif %}</dl></div></div>
+    <div class="tarjeta"><div class="cab"><h2>Orden</h2></div><div class="cuerpo"><dl class="ficha"><dt>Fecha</dt><dd>{{ orden.fecha|date:"d M Y" }}</dd>{% if orden.fecha_entrega_esperada %}<dt>Entrega esperada</dt><dd>{{ orden.fecha_entrega_esperada|date:"d M Y" }}</dd>{% endif %}<dt>Almacén</dt><dd>{{ orden.almacen_destino }}</dd><dt>Solicitó</dt><dd>{{ orden.solicitante|default:"—" }}</dd>{% if orden.aprobada_por %}<dt>Aprobó</dt><dd>{{ orden.aprobada_por }}</dd>{% endif %}{% if orden.pedido_origen %}<dt>Nace de</dt><dd>{% if request.user|puede:"ventas:detalle" %}<a href="{% url 'ventas:detalle' orden.pedido_origen.pk %}">{{ orden.pedido_origen.numero }}</a>{% endif %}</dd>{% endif %}</dl>{% if orden.notas %}<p class="tenue" style="margin-top:10px">{{ orden.notas }}</p>{% endif %}</div></div>
+  </div>
+</div>
+{% endblock %}

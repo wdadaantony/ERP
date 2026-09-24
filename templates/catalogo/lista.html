@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Productos{% endblock %}
+{% block encabezado %}Productos y servicios{% endblock %}
+{% block acciones %}{% if request.user|puede:"catalogo:nuevo" %}<a class="boton primario" href="{% url 'catalogo:nuevo' %}">Nuevo producto</a>{% endif %}{% endblock %}
+{% block contenido %}
+<div class="tarjeta">
+  <div class="cab">
+    <form class="filtros" method="get"><input type="search" name="q" value="{{ q }}" placeholder="Código o nombre"><input type="hidden" name="f" value="{{ f }}"><button class="boton">Buscar</button></form>
+    <div class="pastillas" style="margin-left:auto">
+      <a class="pastilla {% if not f %}activa{% endif %}" href="?q={{ q }}">Activos</a>
+      <a class="pastilla {% if f == 'bienes' %}activa{% endif %}" href="?f=bienes&q={{ q }}">Bienes</a>
+      <a class="pastilla {% if f == 'servicios' %}activa{% endif %}" href="?f=servicios&q={{ q }}">Servicios</a>
+      <a class="pastilla {% if f == 'inactivos' %}activa{% endif %}" href="?f=inactivos&q={{ q }}">Inactivos</a>
+    </div>
+  </div>
+  {% if page_obj.object_list %}
+  <div class="envuelve"><table class="datos">
+    <thead><tr><th>Código</th><th>Nombre</th><th>Tipo</th><th>Unidad</th><th class="num">Precio</th><th class="num">Costo prom.</th><th class="num">Stock</th><th class="num">Disponible</th><th></th></tr></thead>
+    <tbody>{% for p in page_obj %}
+    <tr>
+      <td class="mono">{{ p.codigo }}</td>
+      <td><b>{{ p.nombre }}</b>{% if p.categoria %}<br><small>{{ p.categoria }}</small>{% endif %}</td>
+      <td><small>{{ p.get_tipo_display }}</small></td>
+      <td>{{ p.unidad_medida.codigo }}</td>
+      <td class="num">{{ p.precio_lista|floatformat:2 }}</td>
+      <td class="num">{% if p.tipo == 'bien' %}{{ p.costo_promedio|floatformat:2 }}{% else %}—{% endif %}</td>
+      <td class="num">{% if p.stock is not None %}{% if p.bajo_minimo %}<span class="estado en_espera">{{ p.stock|cantidad }}</span>{% else %}{{ p.stock|cantidad }}{% endif %}{% else %}—{% endif %}</td>
+      <td class="num">{% if p.disponible is not None %}{{ p.disponible|cantidad }}{% else %}—{% endif %}</td>
+      <td>{% if request.user|puede:"catalogo:editar" %}<a class="boton chico" href="{% url 'catalogo:editar' p.pk %}">Editar</a>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  {% include "parciales/paginacion.html" %}
+  {% else %}<div class="vacio"><b>Sin productos</b>Crea el primero con el botón de arriba.</div>{% endif %}
+</div>
+{% endblock %}

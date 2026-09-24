@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Bitácora{% endblock %}
+{% block miga %}{% if request.user|puede:"integraciones:panel" %}<a href="{% url 'integraciones:panel' %}">Integraciones</a>{% endif %} › Bitácora{% endblock %}
+{% block encabezado %}Bitácora de integraciones{% endblock %}
+{% block contenido %}
+<div class="tarjeta">
+  <div class="cab"><div class="pastillas"><a class="pastilla {% if not estado %}activa{% endif %}" href="?">Todos</a><a class="pastilla {% if estado == 'exito' %}activa{% endif %}" href="?estado=exito">Con éxito</a><a class="pastilla {% if estado == 'error' %}activa{% endif %}" href="?estado=error">Con error</a></div></div>
+  <table class="datos"><thead><tr><th>Cuándo</th><th>Servicio</th><th>Dirección</th><th>Operación</th><th>Objeto</th><th>Id externo</th><th>Estado</th><th class="num">HTTP</th><th class="num">ms</th></tr></thead>
+  {% for r in page_obj %}<tr><td><small>{{ r.creado_en|date:"d M Y H:i:s" }}</small></td><td>{{ r.servicio.nombre }}</td><td><small>{{ r.get_direccion_display }}</small></td><td>{{ r.operacion }}</td><td><small>{{ r.entidad }} #{{ r.objeto_id }}</small></td><td class="mono"><small>{{ r.id_externo|default:"—" }}</small></td><td><span class="estado {{ r.estado }}">{{ r.get_estado_display }}</span>{% if r.mensaje_error %}<br><small>{{ r.mensaje_error|truncatechars:60 }}</small>{% endif %}</td><td class="num">{{ r.codigo_http|default:"—" }}</td><td class="num">{{ r.duracion_ms|default:"—" }}</td></tr>{% empty %}<tr><td colspan="9" class="vacio">Sin registros.</td></tr>{% endfor %}</table>
+  {% include "parciales/paginacion.html" %}
+</div>
+{% endblock %}

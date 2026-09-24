@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% load erp %}
+{% block titulo %}Saldos{% endblock %}
+{% block miga %}{% if request.user|puede:"contabilidad:asientos" %}<a href="{% url 'contabilidad:asientos' %}">Contabilidad</a>{% endif %} › Saldos{% endblock %}
+{% block encabezado %}Saldos por cuenta{% endblock %}
+{% block acciones %}{% if request.user|puede:'gestion:ajuste' %}<a class="boton" href="{% url 'gestion:ajuste' %}">Asiento de ajuste</a>{% endif %}{% if request.user|puede:'gestion:flujo_caja' %}<a class="boton" href="{% url 'gestion:flujo_caja' %}">Flujo de caja</a>{% endif %}{% endblock %}
+{% block contenido %}
+<div class="tarjeta" style="margin-bottom:20px"><div class="cuerpo"><form class="filtros">{{ form.as_p }}<button class="boton">Consultar</button><button name="exportar" value="csv" class="boton">Exportar CSV</button></form><small>Movimientos dentro del periodo seleccionado. Sin fechas incluye todo el histórico.</small></div></div>
+<div class="tarjeta" style="max-width:900px">
+  <table class="datos"><thead><tr><th>Cuenta</th><th>Naturaleza</th><th class="num">Debe</th><th class="num">Haber</th><th class="num">Saldo</th></tr></thead>
+  {% for f in filas %}<tr><td><span class="mono">{{ f.cuenta.codigo }}</span> {{ f.cuenta.nombre }}</td><td><small>{{ f.cuenta.get_naturaleza_display }}</small></td><td class="num">{{ f.debe|floatformat:2 }}</td><td class="num">{{ f.haber|floatformat:2 }}</td><td class="num"><b>{{ f.saldo|floatformat:2 }}</b></td></tr>{% empty %}<tr><td colspan="5" class="vacio">Sin movimientos contables.</td></tr>{% endfor %}
+  <tfoot><tr><td colspan="2">Totales</td><td class="num">{{ total_debe|floatformat:2 }}</td><td class="num">{{ total_haber|floatformat:2 }}</td><td></td></tr></tfoot></table>
+</div>
+{% endblock %}

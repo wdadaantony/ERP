@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block titulo %}Acceso no autorizado{% endblock %}
+{% block encabezado %}Tu rol no permite esta operación{% endblock %}
+{% block contenido %}
+<div class="tarjeta"><div class="cuerpo">
+  <p>Solicita al administrador que revise tu rol y las empresas a las que tienes acceso.</p>
+  <p>No se ha realizado la operación solicitada.</p>
+  <a class="boton" href="{% url 'core:inicio' %}">Volver al inicio</a>
+</div></div>
+{% endblock %}
