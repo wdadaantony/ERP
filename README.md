@@ -324,3 +324,18 @@ Como cualquier comprobante, se encola: tampoco llama al OSE en vivo.
   el tablero de márgenes y rotación.
 - **Fase 2**: conector real del OSE y conciliación bancaria automática nocturna.
 - **Fase 3**: CRM, WhatsApp, Ads y pasarela sobre la capa de conectores.
+
+### Despliegue rapido en Render
+
+El repositorio incluye `render.yaml`, preparado para crear un servicio web Django y una base PostgreSQL gratuita desde GitHub. En Render:
+
+1. **New > Blueprint**.
+2. Conecta `https://github.com/wdadaantony/ERP`.
+3. Selecciona la rama `main`.
+4. Revisa el plan gratuito y confirma **Apply**.
+
+Render ejecutara `build.sh`, aplicara migraciones y arrancara Gunicorn. La URL temporal sera `https://erp.onrender.com` o una variante disponible si ese nombre ya esta tomado. La base gratuita sirve para probar y vence segun las condiciones vigentes de Render; para clientes reales usa un plan persistente y configura el worker de integraciones como servicio separado con:
+
+```bash
+python manage.py procesar_cola --continuo
+```

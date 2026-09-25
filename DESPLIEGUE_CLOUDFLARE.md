@@ -40,3 +40,26 @@ El `Procfile` contiene los comandos de web, worker y migración. No ejecutar
 `sembrar_demo` en una base con clientes reales. Completar el alta y los controles
 de `PREPARACION_COMERCIAL.md` antes de operar. No hay un despliegue Cloudflare
 creado ni recursos de pago contratados por subir este repositorio.
+
+## Opcion preparada: Render + Cloudflare
+
+El repositorio ya trae `render.yaml` para crear un Blueprint en Render con:
+
+- servicio web Python/Django;
+- base PostgreSQL gratuita para pruebas;
+- `DEBUG=0`, `SECRET_KEY` generada, `DATABASE_URL` interna;
+- `collectstatic`, migraciones y Gunicorn.
+
+Flujo recomendado:
+
+1. En Render, crear **New > Blueprint** desde `wdadaantony/ERP`.
+2. Esperar a que termine el primer deploy y abrir la URL `*.onrender.com`.
+3. Crear el superusuario desde Render Shell:
+
+   ```bash
+   python manage.py createsuperuser
+   ```
+
+4. Si usaras un dominio propio en Cloudflare, agregarlo como custom domain en Render y luego crear el registro DNS que Render indique.
+
+Para operar con clientes reales falta agregar un worker persistente para `python manage.py procesar_cola --continuo`, storage externo para adjuntos privados y un plan de base de datos que no expire.
