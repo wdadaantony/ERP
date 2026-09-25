@@ -19,20 +19,36 @@
   <div class="tarjeta indicador">
     <small><span class="kpi-icon">{% include 'parciales/ico.html' with n='tesoreria' %}</span>Por cobrar</small>
     <div class="valor">{{ saldo_por_cobrar|dinero:request.empresa.moneda_base }}</div>
-    <div class="detalle">{{ cantidad_por_cobrar }} comprobante{{ cantidad_por_cobrar|pluralize }} con saldo</div>
+    <div class="detalle">{{ cantidad_por_cobrar }} comprobante{{ cantidad_por_cobrar|pluralize }} con saldo{% if dias_cobranza_promedio %} · {{ dias_cobranza_promedio }} días promedio{% endif %}</div>
   </div>
   <div class="tarjeta indicador">
-    <small><span class="kpi-icon">{% include 'parciales/ico.html' with n='facturacion' %}</span>Vencido</small>
-    <div class="valor {% if saldo_vencido %}alerta{% endif %}">{{ saldo_vencido|dinero:request.empresa.moneda_base }}</div>
-    <div class="detalle">{{ cantidad_vencidos }} comprobante{{ cantidad_vencidos|pluralize }} pasado{{ cantidad_vencidos|pluralize }} de fecha</div>
+    <small><span class="kpi-icon">{% include 'parciales/ico.html' with n='facturacion' %}</span>Margen estimado</small>
+    <div class="valor {% if margen_estimado is not None and margen_estimado < 0 %}alerta{% endif %}">{% if margen_estimado is not None %}{{ margen_estimado|dinero:request.empresa.moneda_base }}{% else %}-{% endif %}</div>
+    <div class="detalle">{% if margen_estimado_pct is not None %}{{ margen_estimado_pct|floatformat:1 }}% sobre ventas con costo promedio{% else %}Carga costos para medir rentabilidad{% endif %}</div>
   </div>
   <div class="tarjeta indicador">
     <small><span class="kpi-icon">{% include 'parciales/ico.html' with n='ventas' %}</span>Pedidos abiertos</small>
     <div class="valor">{{ pedidos_abiertos }}</div>
-    <div class="detalle">{% for p in pedidos_por_estado %}{{ estados|get_item:p.estado|lower }} {{ p.n }}{% if not forloop.last %} · {% endif %}{% empty %}Ninguno todavía{% endfor %}</div>
+    <div class="detalle">{{ ventas_pendientes_entrega }} esperando entrega o stock</div>
   </div>
 </div>
 
+<div class="rejilla c3" style="margin-bottom:18px">
+  <div class="tarjeta indicador compacto">
+    <small><span class="kpi-icon">{% include 'parciales/ico.html' with n='facturacion' %}</span>Vencido</small>
+    <div class="valor {% if saldo_vencido %}alerta{% endif %}">{{ saldo_vencido|dinero:request.empresa.moneda_base }}</div>
+    <div class="detalle">{{ cantidad_vencidos }} comprobante{{ cantidad_vencidos|pluralize }} pasado{{ cantidad_vencidos|pluralize }} de fecha</div>
+  </div>
+  <div class="tarjeta indicador compacto">
+    <small><span class="kpi-icon">{% include 'parciales/ico.html' with n='compras' %}</span>Por pagar</small>
+    <div class="valor">{% if saldo_proveedores is not None %}{{ saldo_proveedores|dinero:request.empresa.moneda_base }}{% else %}-{% endif %}</div>
+    <div class="detalle">{{ cantidad_proveedores }} proveedor{{ cantidad_proveedores|pluralize:"es" }} con saldo · {{ proveedores_vencidos }} vencido{{ proveedores_vencidos|pluralize }}</div>
+  </div>
+  <div class="tarjeta indicador compacto">
+    <small><span class="kpi-icon">{% include 'parciales/ico.html' with n='crm' %}</span>Alertas ejecutivas</small>
+    <div class="detalle dashboard-alertas">{% for alerta in alertas_ejecutivas %}<span>{{ alerta }}</span>{% empty %}<span>Sin alertas críticas hoy</span>{% endfor %}</div>
+  </div>
+</div>
 {% include 'core/dashboard_paneles.html' %}
 <div class="titulo-seccion"><h2>Actividad y seguimiento</h2><span>Lo importante, a la vista</span></div>
 <div class="rejilla lados">
@@ -81,3 +97,4 @@
   </div>
 </div>
 {% endblock %}
+

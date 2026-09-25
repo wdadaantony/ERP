@@ -1,3 +1,33 @@
 {% extends 'base.html' %}
-{% block titulo %}Preparación de empresa{% endblock %}{% block encabezado %}Preparación de empresa{% endblock %}
-{% block contenido %}<p class="bloque-alerta" style="margin-bottom:20px">Estos controles verifican configuración local. La conexión con proveedores, entrega de correos, carga y recuperación deben probarse en el servidor de cada instalación.</p><div class="tarjeta"><table class="datos"><thead><tr><th>Control</th><th>Estado</th><th>Detalle</th></tr></thead><tbody>{% for nombre, listo, detalle in controles %}<tr><td>{{ nombre }}</td><td>{% if listo %}<span class="estado hecho">Configurado</span>{% else %}<span class="estado pendiente">Pendiente</span>{% endif %}</td><td>{{ detalle }}</td></tr>{% endfor %}</tbody></table></div><div class="titulo-seccion"><h2>Conexiones por empresa</h2></div><div class="tarjeta"><table class="datos"><tbody>{% for nombre, estado in conexiones %}<tr><td>{{ nombre }}</td><td>{{ estado }}</td></tr>{% empty %}<tr><td class="vacio">Sin servicios configurados. Se pueden añadir desde Administración → Servicios externos.</td></tr>{% endfor %}</tbody></table></div>{% endblock %}
+{% block titulo %}Preparación comercial{% endblock %}{% block encabezado %}Preparación comercial{% endblock %}
+{% block contenido %}
+<p class="bloque-alerta" style="margin-bottom:20px">Esta vista separa lo que ya puede operarse de lo que todavía debe cerrarse antes de vender una instalación a empresas reales. Las conexiones con proveedores, respaldos, carga y recuperación se validan siempre en el servidor final.</p>
+
+<div class="rejilla c2" style="margin-bottom:18px">
+  <div class="tarjeta">
+    <div class="cab"><h2>Fases para vender el ERP</h2></div>
+    <table class="datos">
+      <tbody>
+      {% for fase in fases %}
+        <tr>
+          <td><b>{{ fase.nombre }}</b><br><small>{{ fase.detalle }}</small></td>
+          <td>{% if fase.listo %}<span class="estado hecho">Listo</span>{% else %}<span class="estado pendiente">Pendiente</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="tarjeta">
+    <div class="cab"><h2>Prioridad comercial</h2></div>
+    <div class="cuerpo preparacion-resumen">
+      <b>Primero comercio y distribución.</b>
+      <p>El sistema ya calza mejor con compra, venta, almacén, facturación, cobranza y CRM. Para otros rubros conviene activar módulos por paquete, no crear versiones distintas.</p>
+      <b>El valor que se vende.</b>
+      <p>Menos errores de stock, cobranza más visible, ventas con trazabilidad y cierres contables más ordenados. Cada piloto debe medir esos ahorros.</p>
+    </div>
+  </div>
+</div>
+
+<div class="tarjeta"><table class="datos"><thead><tr><th>Área</th><th>Control</th><th>Estado</th><th>Detalle</th></tr></thead><tbody>{% for control in controles %}<tr><td>{{ control.grupo }}</td><td>{{ control.nombre }}</td><td>{% if control.listo %}<span class="estado hecho">Configurado</span>{% else %}<span class="estado pendiente">Pendiente</span>{% endif %}</td><td>{{ control.detalle }}</td></tr>{% endfor %}</tbody></table></div>
+<div class="titulo-seccion"><h2>Conexiones por empresa</h2></div><div class="tarjeta"><table class="datos"><tbody>{% for nombre, estado in conexiones %}<tr><td>{{ nombre }}</td><td>{{ estado }}</td></tr>{% empty %}<tr><td class="vacio">Sin servicios configurados. Se pueden añadir desde Administración → Servicios externos.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

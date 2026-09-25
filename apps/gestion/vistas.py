@@ -25,8 +25,8 @@ def formulario(request, form, titulo, aviso=''):
 @login_required
 def preparacion(request):
     from .preparacion import revisar
-    controles, conexiones = revisar(request.empresa)
-    return render(request, 'gestion/preparacion.html', {'controles': controles, 'conexiones': conexiones})
+    controles, conexiones, fases = revisar(request.empresa)
+    return render(request, 'gestion/preparacion.html', {'controles': controles, 'conexiones': conexiones, 'fases': fases})
 
 
 @login_required
@@ -244,3 +244,4 @@ def reportes(request):
         tramo = 'Al día' if dias <= 0 else '1–30 días' if dias <= 30 else '31–60 días' if dias <= 60 else '61–90 días' if dias <= 90 else 'Más de 90 días'
         tramos[tramo] += c.saldo_base
     return render(request, 'gestion/reportes.html', {'form': form, 'filas': filas, 'total': total, 'tramos': tramos.items()})
+

@@ -102,8 +102,8 @@ gunicorn config.wsgi --log-file -
 
 Cada usuario ve solo lo suyo salvo que tenga el permiso `ver_todo` del módulo
 (`ventas.ver_todo`, `crm.ver_todo`, `terceros.ver_todo`): dos vendedores en la
-misma pantalla ven listas distintas. La empresa activa vive en la sesión, y quien
-pertenece a varias la cambia desde el pie del menú.
+misma pantalla ven listas distintas. La empresa activa se guarda en el usuario;
+quien pertenece a varias la cambia desde el pie del menú.
 
 ## El flujo, paso a paso
 
@@ -325,17 +325,24 @@ Como cualquier comprobante, se encola: tampoco llama al OSE en vivo.
 - **Fase 2**: conector real del OSE y conciliación bancaria automática nocturna.
 - **Fase 3**: CRM, WhatsApp, Ads y pasarela sobre la capa de conectores.
 
-### Despliegue rapido en Render
+### Despliegue en Render
 
-El repositorio incluye `render.yaml`, preparado para crear un servicio web Django y una base PostgreSQL gratuita desde GitHub. En Render:
+El repositorio incluye `render.yaml` para una instalación seria de prueba comercial: servicio web, worker de integraciones y PostgreSQL persistente. No está pensado como hosting gratuito para clientes reales, porque el plan free no ofrece las garantías necesarias para migraciones previas, worker permanente, base persistente y archivos privados.
+
+En Render:
 
 1. **New > Blueprint**.
 2. Conecta `https://github.com/wdadaantony/ERP`.
 3. Selecciona la rama `main`.
-4. Revisa el plan gratuito y confirma **Apply**.
+4. Define el mismo `SECRET_KEY` largo en `erp-web` y `erp-worker`.
+5. Ajusta `ALLOWED_HOSTS` y `CSRF_TRUSTED_ORIGINS` cuando conectes un dominio propio.
+6. Aplica el blueprint y revisa que `erp-web`, `erp-worker` y `erp-db` queden activos.
 
-Render ejecutara `build.sh`, aplicara migraciones y arrancara Gunicorn. La URL temporal sera `https://erp.onrender.com` o una variante disponible si ese nombre ya esta tomado. La base gratuita sirve para probar y vence segun las condiciones vigentes de Render; para clientes reales usa un plan persistente y configura el worker de integraciones como servicio separado con:
+El worker ejecuta:
 
 ```bash
 python manage.py procesar_cola --continuo
 ```
+
+Para facturación electrónica, pagos, WhatsApp, archivos XML/CDR/PDF y datos reales, completa antes los controles de **Preparación comercial** dentro del ERP y la guía `PREPARACION_COMERCIAL.md`.
+
